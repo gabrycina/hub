@@ -25,7 +25,7 @@ Direct links to private reports still require owner auth.
 
 ## HTML content
 
-Uploaded HTML is user-generated and may contain scripts. Hub previews content in a sandboxed iframe. The `/raw` endpoint serves content with `Content-Security-Policy: sandbox`.
+Uploaded HTML is user-generated and may contain scripts. Hub previews content in a sandboxed iframe. The `/raw` endpoint serves content with `Content-Security-Policy: sandbox allow-scripts allow-same-origin` so diagrams (e.g. Mermaid) can render while staying sandboxed.
 
 Treat uploaded reports like untrusted web content.
 

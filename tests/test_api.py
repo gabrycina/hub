@@ -103,6 +103,24 @@ def test_delete_artifact(temp_hub, auth_headers):
     assert not (data_dir / "artifacts" / f"{artifact_id}.html").exists()
 
 
+def test_raw_artifact_allows_scripts_in_sandbox(temp_hub, auth_headers):
+    client, _ = temp_hub
+    created = client.post(
+        "/api/artifacts",
+        json={
+            "html": "<html><body><pre class='mermaid'>graph LR; A-->B</pre></body></html>",
+            "title": "Diagram",
+            "visibility": "private",
+        },
+        headers=auth_headers,
+    )
+    artifact_id = created.json()["id"]
+
+    response = client.get(f"/a/{artifact_id}/raw", headers=auth_headers)
+    assert response.status_code == 200
+    assert response.headers.get("content-security-policy") == "sandbox allow-scripts allow-same-origin"
+
+
 def test_dashboard_delete_returns_no_content(temp_hub, auth_headers):
     client, _ = temp_hub
     created = client.post(

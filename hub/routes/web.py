@@ -159,7 +159,8 @@ def raw_artifact(
     return HTMLResponse(
         content=html,
         headers={
-            "Content-Security-Policy": "sandbox",
+            # Match iframe sandbox; allow-scripts so Mermaid/charts in reports run.
+            "Content-Security-Policy": "sandbox allow-scripts allow-same-origin",
             "X-Content-Type-Options": "nosniff",
         },
     )

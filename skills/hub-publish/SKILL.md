@@ -20,8 +20,14 @@ Publish rich HTML reports to the user's Hub instance on their Tailnet.
 
 2. **Generate HTML** using `skills/hub-publish/template.html` as the shell:
    - Replace `{{title}}`, `{{body}}`, `{{generated_at}}`
-   - Keep all CSS inline in the template
-   - Self-contained: no external dependencies unless charts are needed
+   - Keep report CSS inline; the template loads Mermaid from CDN for diagrams
+   - **Mermaid diagrams** — use `<pre class="mermaid">`, not markdown fences:
+     ```html
+     <pre class="mermaid">
+     flowchart LR
+       A[Start] --> B[End]
+     </pre>
+     ```
 
 3. **Publish** via MCP tool `post_report`:
    ```
@@ -44,6 +50,7 @@ Publish rich HTML reports to the user's Hub instance on their Tailnet.
 - Use clear headings and scannable sections
 - Tables for structured data; keep columns readable
 - Add a short summary at the top
+- For flowcharts, sequence diagrams, or architecture sketches, use Mermaid blocks (see above)
 - For sensitive data, default to `private` and warn before sharing
 
 ## If MCP is unavailable

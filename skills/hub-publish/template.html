@@ -94,6 +94,18 @@
       padding: 1rem;
       overflow-x: auto;
     }
+    pre.mermaid {
+      background: transparent;
+      border: 0;
+      padding: 0;
+      overflow: visible;
+      font-family: inherit;
+      text-align: center;
+    }
+    .mermaid svg {
+      max-width: 100%;
+      height: auto;
+    }
     .card {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -116,5 +128,13 @@
       {{body}}
     </main>
   </div>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "neutral",
+      securityLevel: "loose",
+    });
+  </script>
 </body>
 </html>
