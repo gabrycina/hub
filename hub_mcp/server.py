@@ -92,7 +92,10 @@ mcp.tool(get_report_url)
 
 
 def cli() -> None:
-    ensure_hub_running()
+    # When pointed at a remote Hub (HUB_URL set, e.g. a devbox), don't start a
+    # local server — just act as a client to the remote instance.
+    if not os.environ.get("HUB_URL"):
+        ensure_hub_running()
     mcp.run()
 
 

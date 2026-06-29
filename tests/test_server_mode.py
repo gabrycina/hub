@@ -8,23 +8,24 @@ def test_shareable_requires_viewer_by_default():
     assert can_view(visibility="shareable", owner="a@x", viewer="b@x") is True
 
 
-def test_shareable_open_when_trust_network():
-    # Server mode: the network is the boundary, so anonymous can view shareable.
+def test_trust_network_makes_everything_viewable():
+    # Server mode: the network (VPN) is the boundary, so anyone who can reach the
+    # server sees every report, regardless of visibility or identity.
     assert can_view(
         visibility="shareable", owner="a@x", viewer=None, trust_network=True
     ) is True
-
-
-def test_private_stays_owner_only_even_with_trust_network():
     assert can_view(
         visibility="private", owner="a@x", viewer=None, trust_network=True
-    ) is False
+    ) is True
     assert can_view(
         visibility="private", owner="a@x", viewer="b@x", trust_network=True
-    ) is False
-    assert can_view(
-        visibility="private", owner="a@x", viewer="a@x", trust_network=True
     ) is True
+
+
+def test_private_stays_owner_only_in_local_mode():
+    assert can_view(visibility="private", owner="a@x", viewer=None) is False
+    assert can_view(visibility="private", owner="a@x", viewer="b@x") is False
+    assert can_view(visibility="private", owner="a@x", viewer="a@x") is True
 
 
 def test_brand_name_default_and_custom():

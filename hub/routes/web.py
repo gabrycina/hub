@@ -41,17 +41,31 @@ def _can_manage_artifact(row: dict, auth: AuthContext, settings: Settings) -> bo
     return auth.user == hub_owner or auth.user == row["owner"]
 
 
+def _require_dashboard_access(auth: AuthContext | None, settings: Settings) -> None:
+    # Local/Serve mode requires an identity to browse. In server (trust_network)
+    # mode the network is the boundary, so anonymous viewers may browse — db.list
+    # already limits a viewer-less listing to shareable reports.
+    if auth is None and not settings.trust_network:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required"
+        )
+
+
 def _dashboard_context(
     *,
-    auth: AuthContext,
+    auth: AuthContext | None,
     settings: Settings,
     db: Database,
     scope: str,
     q: str | None,
 ) -> dict:
     hub_owner = resolved_owner(settings, auth)
+    # Server (trust_network) mode: the network is the access boundary, so list
+    # every report to anyone who can reach it (db.list returns all when the
+    # viewer is the hub owner). Local mode keeps per-viewer visibility filtering.
+    list_viewer = hub_owner if settings.trust_network else (auth.user if auth else None)
     rows = db.list(
-        viewer=auth.user,
+        viewer=list_viewer,
         hub_owner=hub_owner,
         scope=scope,
         query=q,
@@ -64,7 +78,7 @@ def _dashboard_context(
         "auth": auth,
         "settings": settings,
         "hub_owner": hub_owner,
-        "is_hub_owner": auth.user == hub_owner,
+        "is_hub_owner": bool(auth and auth.user == hub_owner),
     }
 
 
@@ -73,10 +87,11 @@ def dashboard(
     request: Request,
     scope: str = Query("all", pattern="^(mine|shared|all)$"),
     q: str | None = None,
-    auth: AuthContext = Depends(get_auth),
+    auth: AuthContext | None = Depends(get_optional_auth),
     settings: Settings = Depends(get_settings),
     db: Database = Depends(get_db),
 ) -> HTMLResponse:
+    _require_dashboard_access(auth, settings)
     return templates.TemplateResponse(
         request,
         "dashboard.html",
@@ -89,10 +104,11 @@ def reports_partial(
     request: Request,
     scope: str = Query("all", pattern="^(mine|shared|all)$"),
     q: str | None = None,
-    auth: AuthContext = Depends(get_auth),
+    auth: AuthContext | None = Depends(get_optional_auth),
     settings: Settings = Depends(get_settings),
     db: Database = Depends(get_db),
 ) -> HTMLResponse:
+    _require_dashboard_access(auth, settings)
     return templates.TemplateResponse(
         request,
         "partials/artifact_list.html",

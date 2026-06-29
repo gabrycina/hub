@@ -34,10 +34,12 @@ def can_view(
     viewer: str | None,
     trust_network: bool = False,
 ) -> bool:
+    # Server (trust_network) mode: the network (VPN/tailnet) is the access
+    # boundary, so anyone who can reach the server may view any report.
+    if trust_network:
+        return True
     if visibility == "shareable":
-        # In server (trust_network) mode the network is the access boundary, so a
-        # shareable report is viewable even without an identified viewer.
-        return trust_network or viewer is not None
+        return viewer is not None
     return viewer == owner
 
 

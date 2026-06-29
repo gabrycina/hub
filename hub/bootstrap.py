@@ -27,6 +27,7 @@ CONFIG_KEYS = (
     "HUB_HOST",
     "HUB_TRUST_NETWORK",
     "HUB_SITE_NAME",
+    "HUB_URL",
 )
 NOT_CONFIGURED_MSG = (
     "Hub is not configured. Run `uv run hub init --mcp` once, then restart your agent."

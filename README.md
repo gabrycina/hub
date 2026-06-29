@@ -132,22 +132,29 @@ This creates config, registers MCP, starts Hub, and configures Tailscale Serve. 
 
 **Tell the user** to restart their agent after init.
 
-### Hosting mode: local vs server
+### Hosting modes
 
-Hub can run two ways, chosen at init:
+Hub runs one of three ways. Pick based on whether *you* host or a shared server does.
 
-- **Local (default):** host on your own machine, exposed to your tailnet over **Tailscale Serve**. Viewing is identity-gated (Serve injects each viewer's Tailscale identity). This is the `uv run hub init --mcp` flow above.
-- **Server:** host on an always-on box (e.g. a devbox) that peers reach directly by IP, with no Tailscale Serve. Use this when Serve isn't available on your tailnet or you want a shared, always-on inbox.
+**1. Local (default)** — host on your own machine, exposed to your tailnet over **Tailscale Serve**. Viewing is identity-gated (Serve injects each viewer's Tailscale identity). This is the `uv run hub init --mcp` flow above. Reports are yours; share individual ones over the tailnet when you choose.
+
+**2. Server** — host on an always-on box (e.g. a company devbox) that teammates reach directly by IP, no Tailscale Serve. Use this for a shared, always-on team inbox, or when Serve isn't enabled on your tailnet.
 
 ```bash
 # On the server/devbox:
-uv run hub init --mcp --server --site-name "Gen AI" --public-url http://<server-ip>:17482
+uv run hub init --server --site-name "Gen AI" --public-url http://<server-ip>:8000
 uv run hub up --no-serve
 ```
 
-Server mode sets `HUB_HOST=0.0.0.0` and `HUB_TRUST_NETWORK=true`: the network boundary becomes the access control, so anyone who can reach the server can view **shareable** reports without a Tailscale identity header. Publishing still requires the API token, and `private` reports stay owner-only. `--site-name` brands the dashboard title (e.g. "Gen AI Hub").
+Server mode sets `HUB_HOST=0.0.0.0` and `HUB_TRUST_NETWORK=true`: the network (VPN/tailnet) becomes the access boundary, so anyone who can reach the server sees **every** report. Publishing and managing still require the API token. `--site-name` brands the dashboard title (e.g. "Gen AI Hub"). The command prints a ready-to-share `hub connect` line for teammates.
 
-To publish from an agent on your laptop to a remote Hub, point the local MCP at it by setting `HUB_URL` and `HUB_API_TOKEN` (the server's token) in `~/.config/hub/config.env`.
+**3. Connect (client-only)** — don't host anything; point your agents at a shared Hub someone else runs:
+
+```bash
+uv run hub connect --url http://<server-ip>:8000 --token <server-token> --mcp
+```
+
+This writes `HUB_URL` + `HUB_API_TOKEN` to your config and registers the MCP with your agents. No local server runs (the MCP entrypoint skips it when `HUB_URL` is set); `post_report`, `list_reports`, etc. all operate on the shared server. Restart your agent afterward.
 
 ### Install the publish skill (recommended)
 

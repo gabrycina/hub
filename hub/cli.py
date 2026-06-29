@@ -110,14 +110,19 @@ def cmd_init(args: argparse.Namespace) -> int:
         if args.site_name:
             values["HUB_SITE_NAME"] = args.site_name
         set_config_values(values)
+        from hub.bootstrap import _current_info
+
+        token = _current_info()["token"]
         print("\nServer mode configured (no Tailscale Serve).")
         print(f"  Binding:  0.0.0.0:{_port()}")
         print(f"  Public:   {public_url}")
         if args.site_name:
             print(f"  Branding: {args.site_name} Hub")
-        print("  Viewing:  anyone who can reach this server can view shareable reports;")
-        print("            publishing still requires the API token.")
+        print("  Viewing:  anyone who can reach this server sees every report;")
+        print("            publishing/managing still requires the API token.")
         print("\nStart it with: uv run hub up --no-serve")
+        print("\nTeammates point their agents here with:")
+        print(f"  uv run hub connect --url {public_url} --token {token} --mcp")
         return 0
 
     if args.no_serve:
@@ -134,6 +139,31 @@ def cmd_init(args: argparse.Namespace) -> int:
     print("Hub is running.")
     print(f"  Local:    {_local_url()}")
     return _print_serve_result(result, interactive=True)
+
+
+def cmd_connect(args: argparse.Namespace) -> int:
+    url = args.url.rstrip("/")
+    # Create the local config dir/token, then point everything at the remote Hub.
+    # No local server runs: the MCP entrypoint skips ensure_hub_running when
+    # HUB_URL is set, and the agent's tools read/write the remote instance.
+    init_config(repo_dir=Path(args.repo).resolve())
+    set_config_values(
+        {"HUB_URL": url, "HUB_API_TOKEN": args.token, "HUB_PUBLIC_URL": url}
+    )
+    print(f"Connected to remote Hub: {url}")
+    print("  No local Hub runs. Your agents publish to and read from the shared server.")
+
+    if args.mcp:
+        repo = Path(args.repo).resolve()
+        agents = configure_mcp_agents(repo_dir=repo)
+        print()
+        for name, path in agents:
+            print(f"MCP config written for {name}: {path}")
+        print(agent_restart_message(agents))
+    else:
+        print("\nMCP config (add to your agent):")
+        print(json.dumps(mcp_config(repo_dir=Path(args.repo).resolve()), indent=2))
+    return 0
 
 
 def cmd_up(args: argparse.Namespace) -> int:
@@ -240,6 +270,26 @@ def build_parser() -> argparse.ArgumentParser:
         help="Seconds to wait for Tailscale Serve approval (default: 90)",
     )
 
+    connect_parser = sub.add_parser(
+        "connect",
+        help="Point your agents at a remote Hub (no local server runs)",
+    )
+    connect_parser.add_argument(
+        "--url",
+        required=True,
+        help="Base URL of the remote Hub, e.g. http://172.31.95.176:8000",
+    )
+    connect_parser.add_argument(
+        "--token",
+        required=True,
+        help="API token of the remote Hub (printed by `hub init --server`)",
+    )
+    connect_parser.add_argument(
+        "--mcp",
+        action="store_true",
+        help="Register the Hub MCP server with detected agents",
+    )
+
     up_parser = sub.add_parser("up", help="Start hub and expose on tailnet")
     up_parser.add_argument(
         "--no-serve",
@@ -286,6 +336,8 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "init":
         return cmd_init(args)
+    if args.command == "connect":
+        return cmd_connect(args)
     if args.command == "up":
         return cmd_up(args)
     if args.command == "serve-setup":
