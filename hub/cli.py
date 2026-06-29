@@ -101,14 +101,19 @@ def cmd_init(args: argparse.Namespace) -> int:
         print(json.dumps(mcp_config(repo_dir=Path(args.repo).resolve()), indent=2))
 
     if args.server:
+        site_name = args.site_name
+        if not site_name and sys.stdin.isatty():
+            site_name = input(
+                "Hub name (e.g. 'Emu' shows as 'Emu Hub'; blank for default): "
+            ).strip()
         public_url = args.public_url.rstrip("/") or _detect_server_url()
         values = {
             "HUB_HOST": "0.0.0.0",
             "HUB_TRUST_NETWORK": "true",
             "HUB_PUBLIC_URL": public_url,
         }
-        if args.site_name:
-            values["HUB_SITE_NAME"] = args.site_name
+        if site_name:
+            values["HUB_SITE_NAME"] = site_name
         set_config_values(values)
         from hub.bootstrap import _current_info
 
@@ -116,8 +121,8 @@ def cmd_init(args: argparse.Namespace) -> int:
         print("\nServer mode configured (no Tailscale Serve).")
         print(f"  Binding:  0.0.0.0:{_port()}")
         print(f"  Public:   {public_url}")
-        if args.site_name:
-            print(f"  Branding: {args.site_name} Hub")
+        if site_name:
+            print(f"  Branding: {site_name} Hub")
         print("  Viewing:  anyone who can reach this server sees every report;")
         print("            publishing/managing still requires the API token.")
         print("\nStart it with: uv run hub up --no-serve")
