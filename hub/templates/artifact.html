@@ -1,42 +1,72 @@
 {% extends "base.html" %}
 
 {% block title %}{{ artifact.title }} — Hub{% endblock %}
+{% block header %}{% endblock %}
+{% block main_class %}report-main{% endblock %}
 
 {% block content %}
-<section class="artifact-header">
-  <div>
-    <h1>{{ artifact.title }}</h1>
-    <p class="subtitle">
-      <span class="badge badge-{{ artifact.visibility.value }}">{{ artifact.visibility.value }}</span>
-      <span>{{ artifact.owner }}</span>
-      <span>{{ artifact.updated_at.strftime('%Y-%m-%d %H:%M') }}</span>
-    </p>
-  </div>
-  <div class="artifact-actions">
-    <button type="button" class="btn" onclick="copyLink('{{ artifact.url }}')">Copy link</button>
-    <a class="btn" href="/a/{{ artifact.id }}/download">Download</a>
+<div class="report-shell">
+  <div class="report-overlay" role="toolbar" aria-label="Report actions">
+    <button type="button" class="overlay-btn" id="share-btn" data-url="{{ artifact.url }}">
+      <svg class="overlay-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7a3.27 3.27 0 0 0 0-1.39l7.05-4.11A3 3 0 1 0 13 6.5l-7.05 4.11a3 3 0 1 0 0 4.78l7.05 4.11a3 3 0 1 0 1.08-1.72z" fill="currentColor"/></svg>
+      Share
+    </button>
+    <a class="overlay-btn" href="/a/{{ artifact.id }}/download" download>
+      <svg class="overlay-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" fill="currentColor"/></svg>
+      Download
+    </a>
     {% if can_manage %}
-    <form method="post" action="/a/{{ artifact.id }}/visibility?visibility={% if artifact.visibility.value == 'private' %}shareable{% else %}private{% endif %}" style="display:inline">
-      <button type="submit" class="btn btn-secondary">
-        Make {% if artifact.visibility.value == 'private' %}shareable{% else %}private{% endif %}
+    <form method="post" action="/a/{{ artifact.id }}/visibility?visibility={% if artifact.visibility.value == 'private' %}shareable{% else %}private{% endif %}" class="overlay-form">
+      <button type="submit" class="overlay-btn overlay-btn-muted" title="Toggle visibility">
+        {{ artifact.visibility.value }}
       </button>
     </form>
     {% endif %}
   </div>
-</section>
 
-<iframe
-  class="artifact-frame"
-  src="/a/{{ artifact.id }}/raw"
-  sandbox="allow-scripts allow-same-origin"
-  title="{{ artifact.title }}"
-></iframe>
+  <div class="report-toast" id="share-toast" hidden>Link copied</div>
+
+  <iframe
+    class="report-frame"
+    src="/a/{{ artifact.id }}/raw"
+    sandbox="allow-scripts allow-same-origin"
+    title="{{ artifact.title }}"
+  ></iframe>
+</div>
 
 <script>
-function copyLink(url) {
-  navigator.clipboard.writeText(url).then(() => {
-    alert('Link copied to clipboard');
+(function () {
+  const btn = document.getElementById('share-btn');
+  const toast = document.getElementById('share-toast');
+  if (!btn) return;
+
+  function showToast(message) {
+    toast.textContent = message;
+    toast.hidden = false;
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => { toast.hidden = true; }, 2200);
+  }
+
+  btn.addEventListener('click', async () => {
+    const url = btn.dataset.url;
+    const title = {{ artifact.title | tojson }};
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, url });
+        return;
+      } catch (err) {
+        if (err && err.name === 'AbortError') return;
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(url);
+      showToast('Link copied');
+    } catch {
+      prompt('Copy this link:', url);
+    }
   });
-}
+})();
 </script>
 {% endblock %}

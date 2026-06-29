@@ -7,7 +7,8 @@
   <link rel="stylesheet" href="/static/styles.css">
   <script src="https://unpkg.com/htmx.org@2.0.4"></script>
 </head>
-<body>
+<body class="{% block body_class %}{% endblock %}">
+  {% block header %}
   <header class="site-header">
     <div class="container header-inner">
       <a href="/" class="brand">Hub</a>
@@ -19,7 +20,8 @@
       </div>
     </div>
   </header>
-  <main class="container">
+  {% endblock %}
+  <main class="{% block main_class %}container{% endblock %}">
     {% block content %}{% endblock %}
   </main>
 </body>
