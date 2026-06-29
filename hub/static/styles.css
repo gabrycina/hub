@@ -575,7 +575,7 @@ h1 {
 }
 
 .empty-state-desc {
-  margin: 0;
+  margin: 0 auto;
   color: var(--muted);
   font-size: 0.9375rem;
   max-width: 28rem;

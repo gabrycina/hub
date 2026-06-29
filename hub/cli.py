@@ -123,10 +123,12 @@ def cmd_init(args: argparse.Namespace) -> int:
         print(f"  Public:   {public_url}")
         if site_name:
             print(f"  Branding: {site_name} Hub")
-        print("  Viewing:  anyone who can reach this server sees every report;")
-        print("            publishing/managing still requires the API token.")
+        print("  Access:   anyone who can reach this server can view and publish")
+        print("            (the network/VPN is the access boundary).")
         print("\nStart it with: uv run hub up --no-serve")
-        print("\nTeammates point their agents here with:")
+        print("\nTeammates connect their agents — zero install, just one command:")
+        print(f"  claude mcp add --transport http hub {public_url}/mcp")
+        print("\nOr run a local MCP client instead (needs uv):")
         print(f"  uv run hub connect --url {public_url} --token {token} --mcp")
         return 0
 
