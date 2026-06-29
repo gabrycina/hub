@@ -23,22 +23,51 @@
   <time class="col-date" datetime="{{ artifact.updated_at.isoformat() }}">{{ artifact.updated_at.strftime('%b %d, %Y') }}</time>
   <span class="col-size">{{ artifact.size_bytes | format_bytes }}</span>
   <div class="file-menu col-actions">
-    <details class="row-menu">
-      <summary class="row-menu-btn" aria-label="Actions for {{ artifact.title }}">⋯</summary>
-      <div class="row-menu-panel">
-        <button type="button" class="row-menu-item" onclick="shareReport(this)">Share</button>
-        <a class="row-menu-item" href="/a/{{ artifact.id }}/download" download>Download</a>
+    <div class="row-menu" data-row-menu>
+      <button
+        type="button"
+        class="row-menu-btn"
+        aria-label="Actions for {{ artifact.title }}"
+        aria-haspopup="menu"
+        aria-expanded="false"
+      >⋯</button>
+      <div class="row-menu-bubbles" role="menu">
+        <button
+          type="button"
+          class="row-bubble liquid-glass"
+          role="menuitem"
+          style="--bubble-x: -46px; --bubble-y: -54px;"
+          onclick="shareReport(this)"
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7a3.27 3.27 0 0 0 0-1.39l7.05-4.11A3 3 0 1 0 13 6.5l-7.05 4.11a3 3 0 1 0 0 4.78l7.05 4.11a3 3 0 1 0 1.08-1.72z" fill="currentColor"/></svg>
+          <span class="row-bubble-tip" role="tooltip">Copy link to share with colleagues</span>
+        </button>
+        <a
+          class="row-bubble liquid-glass"
+          role="menuitem"
+          style="--bubble-x: -64px; --bubble-y: -14px;"
+          href="/a/{{ artifact.id }}/download"
+          download
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" fill="currentColor"/></svg>
+          <span class="row-bubble-tip" role="tooltip">Save report as an HTML file</span>
+        </a>
         {% if can_manage %}
         <button
           type="button"
-          class="row-menu-item row-menu-item-danger"
+          class="row-bubble liquid-glass row-bubble-danger"
+          role="menuitem"
+          style="--bubble-x: -46px; --bubble-y: 26px;"
           hx-delete="/a/{{ artifact.id }}"
           hx-target="#artifact-{{ artifact.id }}"
           hx-swap="outerHTML swap:0.2s"
           hx-confirm="Delete this report?"
-        >Delete</button>
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="currentColor"/></svg>
+          <span class="row-bubble-tip" role="tooltip">Permanently remove this report</span>
+        </button>
         {% endif %}
       </div>
-    </details>
+    </div>
   </div>
 </div>

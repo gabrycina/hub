@@ -214,7 +214,7 @@ h1 {
 .file-list {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  overflow: hidden;
+  overflow: visible;
   font-size: 0.875rem;
 }
 
@@ -238,6 +238,7 @@ h1 {
 .file-row {
   border-bottom: 1px solid var(--border);
   transition: background 0.12s ease;
+  overflow: visible;
 }
 
 .file-row:last-child {
@@ -302,10 +303,13 @@ h1 {
 .file-menu {
   display: flex;
   justify-content: flex-end;
+  overflow: visible;
 }
 
 .row-menu {
   position: relative;
+  width: 28px;
+  height: 28px;
 }
 
 .row-menu-btn {
@@ -321,65 +325,162 @@ h1 {
   font-size: 1.1rem;
   line-height: 1;
   cursor: pointer;
-  list-style: none;
   opacity: 0;
   transition: opacity 0.12s ease, background 0.12s ease;
-}
-
-.row-menu-btn::-webkit-details-marker {
-  display: none;
+  position: relative;
+  z-index: 2;
 }
 
 .file-row:hover .row-menu-btn,
 .file-row:focus-within .row-menu-btn,
-.row-menu[open] .row-menu-btn {
+.row-menu.is-open .row-menu-btn,
+.row-menu.is-hover .row-menu-btn {
   opacity: 1;
 }
 
-.row-menu-btn:hover {
+.row-menu-btn:hover,
+.row-menu.is-open .row-menu-btn {
   background: var(--bg-accent);
   color: var(--text);
 }
 
-.row-menu-panel {
+.row-menu-bubbles {
   position: absolute;
-  right: 0;
-  top: calc(100% + 4px);
-  z-index: 20;
-  min-width: 9rem;
-  padding: 0.3rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--bg);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  z-index: 30;
+  pointer-events: none;
 }
 
-.row-menu:not([open]) .row-menu-panel {
-  display: none;
+.row-menu-bubbles::before {
+  content: "";
+  position: absolute;
+  left: -88px;
+  top: -72px;
+  width: 104px;
+  height: 116px;
+  pointer-events: none;
 }
 
-.row-menu-item {
-  display: block;
-  width: 100%;
-  padding: 0.45rem 0.65rem;
-  border: 0;
-  border-radius: 5px;
-  background: transparent;
+.row-menu.is-hover .row-menu-bubbles::before,
+.row-menu.is-open .row-menu-bubbles::before,
+.row-menu:focus-within .row-menu-bubbles::before {
+  pointer-events: auto;
+}
+
+.row-bubble {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin: -18px 0 0 -18px;
+  padding: 0;
+  border-radius: 50%;
   color: var(--text);
-  font: inherit;
-  font-size: 0.8125rem;
-  text-align: left;
   text-decoration: none;
   cursor: pointer;
+  box-shadow: var(--glass-shadow);
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.35);
+  pointer-events: none;
+  transition:
+    transform 0.38s var(--ease-spring),
+    opacity 0.22s ease,
+    box-shadow 0.2s ease,
+    color 0.15s ease;
 }
 
-.row-menu-item:hover {
-  background: var(--bg-accent);
+.row-bubble svg {
+  position: relative;
+  z-index: 1;
 }
 
-.row-menu-item-danger:hover {
-  background: color-mix(in srgb, var(--danger) 10%, transparent);
+.row-menu.is-hover .row-bubble,
+.row-menu.is-open .row-bubble,
+.row-menu:focus-within .row-bubble {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(calc(-50% + var(--bubble-x)), calc(-50% + var(--bubble-y))) scale(1);
+}
+
+.row-menu.is-hover .row-bubble:nth-child(1),
+.row-menu.is-open .row-bubble:nth-child(1),
+.row-menu:focus-within .row-bubble:nth-child(1) {
+  transition-delay: 0.03s;
+}
+
+.row-menu.is-hover .row-bubble:nth-child(2),
+.row-menu.is-open .row-bubble:nth-child(2),
+.row-menu:focus-within .row-bubble:nth-child(2) {
+  transition-delay: 0.07s;
+}
+
+.row-menu.is-hover .row-bubble:nth-child(3),
+.row-menu.is-open .row-bubble:nth-child(3),
+.row-menu:focus-within .row-bubble:nth-child(3) {
+  transition-delay: 0.11s;
+}
+
+.row-bubble:hover,
+.row-bubble:focus-visible {
+  box-shadow: var(--glass-shadow-hover);
+  color: var(--accent);
+}
+
+.row-bubble-danger:hover,
+.row-bubble-danger:focus-visible {
   color: var(--danger);
+}
+
+.row-bubble-tip {
+  position: absolute;
+  right: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 0.35rem 0.6rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--glass-border);
+  background: color-mix(in srgb, var(--surface-solid) 92%, transparent);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  box-shadow: var(--glass-shadow);
+  color: var(--text);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: 40;
+  transition:
+    opacity 0.2s ease 0s,
+    visibility 0s linear 0.2s,
+    transform 0.2s ease 0s;
+}
+
+.row-bubble:hover .row-bubble-tip,
+.row-bubble:focus-visible .row-bubble-tip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) translateX(-3px);
+  transition:
+    opacity 0.2s ease 1.5s,
+    visibility 0s linear 1.5s,
+    transform 0.2s ease 1.5s;
+}
+
+.file-row:has(.row-menu.is-hover),
+.file-row:has(.row-menu.is-open),
+.file-row:has(.row-menu:focus-within) {
+  position: relative;
+  z-index: 20;
 }
 
 .badge-toggle {
