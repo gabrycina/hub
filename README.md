@@ -2,46 +2,60 @@
 
 Self-hosted report inbox for AI coding agents. Publish HTML reports from Claude Code via MCP, browse them on a dashboard, and share with colleagues on your Tailnet.
 
-## Quick start
+## Quick start (2 commands)
 
 ```bash
 cd hub
-uv sync
-./scripts/setup.sh
-
-# Terminal 1 — run hub (localhost only)
-set -a && source ~/.config/hub/config.env && set +a && uv run hub
-
-# Terminal 2 — expose on tailnet
-./scripts/tailscale-serve.sh
+uv sync && uv run hub init --mcp   # one-time: config + Claude Code MCP
 ```
 
-Add the MCP config printed by `setup.sh` to Claude Code, then ask your agent to publish a report with the `hub-publish` skill.
+Restart Claude Code. That's it — Hub auto-starts when the agent uses MCP.
 
-## What you get
+To expose the dashboard on your tailnet (for sharing links with colleagues):
 
-- **MCP integration** — `post_report`, `list_reports`, `set_report_visibility`, `get_report_url`
-- **Dashboard** — browse, search, preview, download, toggle visibility
-- **Private or shareable** — control who on your tailnet can see each report
-- **Tailscale-native security** — bind to `127.0.0.1`, expose via `tailscale serve`, identity via `Tailscale-User-Login`
+```bash
+uv run hub up
+```
+
+## How it works
+
+| Step | Who does it |
+|------|-------------|
+| One-time setup | `hub init --mcp` writes config to `~/.config/hub/` and registers MCP in Claude Code |
+| Start hub | Automatic — MCP starts hub in the background on first use |
+| Share on tailnet | `hub up` — starts hub + `tailscale serve` |
+
+No manual env vars in MCP config. No second terminal for day-to-day agent use.
 
 ## Claude Code MCP
+
+After `hub init --mcp`, your `~/.claude/.mcp.json` contains:
 
 ```json
 {
   "mcpServers": {
     "hub": {
       "command": "uv",
-      "args": ["--directory", "/path/to/hub", "run", "hub-mcp"],
-      "env": {
-        "HUB_URL": "http://127.0.0.1:8080",
-        "HUB_API_TOKEN": "<from ~/.config/hub/token>",
-        "HUB_PUBLIC_URL": "https://your-machine.your-tailnet.ts.net"
-      }
+      "args": ["--directory", "/path/to/hub", "run", "hub-mcp"]
     }
   }
 }
 ```
+
+## Commands
+
+```bash
+hub init [--mcp]   # one-time setup
+hub up           # start hub + tailscale serve (for sharing)
+hub status       # check if hub is running
+```
+
+## What you get
+
+- **MCP integration** — `post_report`, `list_reports`, `set_report_visibility`, `get_report_url`
+- **Dashboard** — browse, search, preview, download, toggle visibility
+- **Private or shareable** — control who on your tailnet can see each report
+- **Tailscale-native security** — bind to `127.0.0.1`, expose via `tailscale serve`
 
 ## Docs
 

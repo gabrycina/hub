@@ -3,9 +3,16 @@ from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from hub.paths import CONFIG_ENV
+
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="HUB_", env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_prefix="HUB_",
+        env_file=(CONFIG_ENV, ".env"),
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     data_dir: Path = Path.home() / ".config" / "hub" / "data"
     host: str = "127.0.0.1"

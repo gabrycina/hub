@@ -1,37 +1,26 @@
 # Claude Code MCP setup
 
-## 1. Initialize Hub
+## One command
 
 ```bash
-./scripts/setup.sh
+uv sync && uv run hub init --mcp
 ```
 
-This creates:
+This will:
 
-- `~/.config/hub/token` — API token for MCP
-- `~/.config/hub/config.env` — environment variables
-- MCP config snippet for Claude Code
+1. Create `~/.config/hub/` (token, config, data dir)
+2. Detect your Tailscale identity and machine URL
+3. Write the MCP entry to `~/.claude/.mcp.json`
 
-## 2. Run Hub
+Restart Claude Code. Hub starts automatically when the agent first calls an MCP tool.
+
+## Sharing reports on your tailnet
+
+MCP works with localhost only. For colleagues to open your dashboard and shareable links:
 
 ```bash
-set -a && source ~/.config/hub/config.env && set +a
-uv run hub
+uv run hub up
 ```
-
-## 3. Add MCP server
-
-Paste the JSON from `setup.sh` into your Claude Code MCP config.
-
-## 4. Use the skill
-
-Copy `skills/hub-publish/` to your project's `.claude/skills/` or reference it from this repo.
-
-Example prompt:
-
-> Generate an HTML report explaining our API migration plan and publish it to Hub as shareable.
-
-The agent will call `post_report` and return your Tailscale URL.
 
 ## MCP tools
 
@@ -41,3 +30,7 @@ The agent will call `post_report` and return your Tailscale URL.
 | `list_reports` | List reports by scope (`mine`, `shared`, `all`) |
 | `set_report_visibility` | Toggle `private` / `shareable` |
 | `get_report_url` | Get URL for an existing report |
+
+## Skill
+
+Use the bundled `skills/hub-publish` skill so the agent generates consistent HTML before publishing.

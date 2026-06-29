@@ -5,17 +5,25 @@ from typing import Any
 import httpx
 from fastmcp import FastMCP
 
+from hub.bootstrap import ensure_hub_running, load_config_env
+
 mcp = FastMCP("Hub")
 
 
 def _hub_url() -> str:
-    return os.environ.get("HUB_URL", "http://127.0.0.1:8080").rstrip("/")
+    load_config_env()
+    host = os.environ.get("HUB_HOST", "127.0.0.1")
+    port = os.environ.get("HUB_PORT", "8080")
+    return os.environ.get("HUB_URL", f"http://{host}:{port}").rstrip("/")
 
 
 def _api_token() -> str:
+    load_config_env()
     token = os.environ.get("HUB_API_TOKEN", "")
     if not token:
-        raise RuntimeError("HUB_API_TOKEN is not set")
+        raise RuntimeError(
+            "Hub is not configured. Run `uv run hub init --mcp` once, then restart Claude Code."
+        )
     return token
 
 
@@ -83,6 +91,7 @@ mcp.tool(get_report_url)
 
 
 def cli() -> None:
+    ensure_hub_running()
     mcp.run()
 
 

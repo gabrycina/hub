@@ -5,6 +5,7 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
+from hub.bootstrap import load_config_env
 from hub.config import get_settings
 from hub.db import Database
 from hub.routes import api, web
@@ -20,7 +21,7 @@ async def lifespan(app: FastAPI):
 
 
 def create_app() -> FastAPI:
-    settings = get_settings()
+    load_config_env()
     app = FastAPI(title="Hub", version="0.1.0", lifespan=lifespan)
 
     static_dir = Path(__file__).parent / "static"
@@ -38,7 +39,9 @@ def create_app() -> FastAPI:
 app = create_app()
 
 
-def cli() -> None:
+def run_server() -> None:
+    load_config_env()
+    get_settings.cache_clear()
     settings = get_settings()
     uvicorn.run(
         "hub.main:app",
@@ -48,5 +51,7 @@ def cli() -> None:
     )
 
 
-if __name__ == "__main__":
-    cli()
+def cli() -> None:
+    from hub.cli import main
+
+    raise SystemExit(main())
