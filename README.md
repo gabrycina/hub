@@ -2,8 +2,6 @@
   <img src="docs/icon.png" alt="Hub" width="96" height="96">
 </p>
 
-<h1 align="center">Hub</h1>
-
 <p align="center">
   Your personal report inbox on the Tailnet.<br>
   Agents publish HTML. You browse, search, and share — privately.
