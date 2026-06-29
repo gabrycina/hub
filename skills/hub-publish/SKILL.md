@@ -29,7 +29,7 @@ VPN/tailnet), or **connect** (the agent points at someone else's shared Hub).
 2. **Generate HTML** using `skills/hub-publish/template.html` as the shell:
    - Replace `{{title}}`, `{{body}}`, `{{generated_at}}`
    - Keep report CSS inline; the template loads Mermaid from CDN for diagrams
-   - **Mermaid diagrams** — use `<pre class="mermaid">`, not markdown fences. Escape `&` as `&amp;` in node chains (e.g. `A &amp; B`):
+   - **Mermaid diagrams** — use `<pre class="mermaid">`, not markdown fences. Escape `&` as `&amp;` in node chains (e.g. `A &amp; B`). Keep each node label on ONE line — never put `<br/>` inside a label: a `<pre>` turns it into a real newline and Mermaid fails with "Syntax error in text". Hub themes Mermaid by the viewer's OS dark/light setting, which can clash with a fixed page background (e.g. dark nodes on a white page). To pin the diagram's colors, make the first line of the block a theme directive, e.g. `%%{init: {'theme':'neutral'}}%%` for a light page or `'dark'` for a dark one.
      ```html
      <pre class="mermaid">
      flowchart LR

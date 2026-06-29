@@ -179,7 +179,7 @@ You should see: `post_report`, `list_reports`, `set_report_visibility`, `get_rep
 ## Publishing a report
 
 1. **Ask visibility** if unclear: `private` (default) or `shareable`. Note: in **server mode** the network is the boundary, so everyone who can reach the server sees every report regardless — warn before publishing sensitive content there.
-2. **Generate HTML** from `skills/hub-publish/template.html` — replace `{{title}}`, `{{body}}`, `{{generated_at}}`. Keep CSS inline. For Mermaid, use `<pre class="mermaid">` and escape `&` as `&amp;`.
+2. **Generate HTML** from `skills/hub-publish/template.html` — replace `{{title}}`, `{{body}}`, `{{generated_at}}`. Keep CSS inline. For Mermaid, use `<pre class="mermaid">` and escape `&` as `&amp;`. Keep each node label on one line — no `<br/>` inside labels (in a `<pre>` it becomes a real newline and Mermaid throws a syntax error). Hub themes Mermaid by the viewer's OS dark/light setting; if your page has a fixed background, pin the diagram colors with a first-line directive like `%%{init: {'theme':'neutral'}}%%`.
 3. **Publish:**
 
 ```
