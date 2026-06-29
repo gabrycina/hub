@@ -50,10 +50,28 @@ def _run(
 def detect_owner() -> str:
     if owner := os.environ.get("HUB_OWNER"):
         return owner
-    if shutil.which("tailscale"):
-        result = _run(["tailscale", "whoami"], timeout=5)
-        if result.returncode == 0 and result.stdout.strip():
-            return result.stdout.strip()
+    if not shutil.which("tailscale"):
+        return "local@dev"
+
+    result = _run(["tailscale", "status", "--json"], timeout=5)
+    if result.returncode == 0 and result.stdout.strip():
+        try:
+            data = json.loads(result.stdout)
+            self_user_id = data.get("Self", {}).get("UserID")
+            users = data.get("User", {})
+            if self_user_id is not None:
+                profile = users.get(str(self_user_id)) or users.get(self_user_id)
+                if isinstance(profile, dict):
+                    login = profile.get("LoginName", "").strip()
+                    if login:
+                        return login
+        except json.JSONDecodeError:
+            pass
+
+    # Older tailscale builds
+    result = _run(["tailscale", "whoami"], timeout=5)
+    if result.returncode == 0 and result.stdout.strip():
+        return result.stdout.strip()
     return "local@dev"
 
 
