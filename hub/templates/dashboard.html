@@ -47,12 +47,7 @@
       placeholder="Search…"
       aria-label="Search reports"
       autocomplete="off"
-      hx-get="/partials/reports"
-      hx-trigger="input changed delay:150ms, scopeChanged"
-      hx-target="#artifact-results"
-      hx-include="#scope-input"
     >
-    <span class="hub-dock-label">Search</span>
   </label>
 </nav>
 
@@ -89,8 +84,23 @@ async function shareReport(btn) {
 (function () {
   const scopeInput = document.getElementById('scope-input');
   const searchInput = document.getElementById('search-input');
-  const dock = document.getElementById('hub-dock');
-  if (!scopeInput || !searchInput || !dock) return;
+  if (!scopeInput || !searchInput) return;
+
+  function refreshReports() {
+    const params = new URLSearchParams({ scope: scopeInput.value });
+    const q = searchInput.value.trim();
+    if (q) params.set('q', q);
+    htmx.ajax('GET', '/partials/reports?' + params.toString(), {
+      target: '#artifact-results',
+      swap: 'innerHTML',
+    });
+  }
+
+  let searchTimer;
+  searchInput.addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(refreshReports, 150);
+  });
 
   document.querySelectorAll('.hub-filter').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -98,7 +108,7 @@ async function shareReport(btn) {
       document.querySelectorAll('.hub-filter').forEach((b) => {
         b.classList.toggle('active', b === btn);
       });
-      htmx.trigger(searchInput, 'scopeChanged');
+      refreshReports();
     });
   });
 })();

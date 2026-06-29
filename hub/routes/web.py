@@ -43,7 +43,7 @@ def _dashboard_context(
     scope: str,
     q: str | None,
 ) -> dict:
-    hub_owner = resolved_owner(settings)
+    hub_owner = resolved_owner(settings, auth)
     rows = db.list(
         viewer=auth.user,
         hub_owner=hub_owner,

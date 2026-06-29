@@ -124,7 +124,6 @@ body {
   top: 0;
   z-index: 100;
   background: var(--bg);
-  border-bottom: 1px solid var(--border);
 }
 
 .header-inner {
@@ -135,19 +134,11 @@ body {
 }
 
 .brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 600;
-  font-size: 1.05rem;
-  letter-spacing: -0.02em;
+  font-weight: 700;
+  font-size: 1.35rem;
+  letter-spacing: -0.03em;
   color: var(--text);
   text-decoration: none;
-}
-
-.brand-mark {
-  display: block;
-  border-radius: 5px;
 }
 
 .header-meta {
@@ -169,12 +160,12 @@ body {
 .header-link {
   font-size: 0.8125rem;
   font-weight: 500;
-  color: var(--accent);
+  color: var(--text);
   text-decoration: none;
 }
 
 .header-link:hover {
-  color: var(--accent-hover);
+  opacity: 0.7;
 }
 
 /* ── Dashboard layout ── */
