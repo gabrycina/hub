@@ -69,6 +69,36 @@
 <div class="hub-toast" id="hub-toast" hidden>Link copied</div>
 
 <script>
+async function deleteReport(el) {
+  const row = el.closest('.file-row');
+  if (!row) return;
+  if (!confirm('Delete this report?')) return;
+
+  const id = row.id.replace(/^artifact-/, '');
+  const toast = document.getElementById('hub-toast');
+
+  try {
+    const res = await fetch(`/a/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('delete failed');
+
+    row.style.transition = 'opacity 0.2s ease';
+    row.style.opacity = '0';
+    setTimeout(() => {
+      row.remove();
+      if (!document.querySelector('.file-row') && typeof window.refreshReports === 'function') {
+        window.refreshReports();
+      }
+    }, 200);
+  } catch {
+    if (toast) {
+      toast.textContent = 'Delete failed';
+      toast.hidden = false;
+      clearTimeout(deleteReport._t);
+      deleteReport._t = setTimeout(() => { toast.hidden = true; }, 2200);
+    }
+  }
+}
+
 async function shareReport(el) {
   const row = el.closest('.file-row');
   if (!row) return;
@@ -188,6 +218,8 @@ async function shareReport(el) {
       refreshReports();
     });
   });
+
+  window.refreshReports = refreshReports;
 })();
 </script>
 {% endblock %}
