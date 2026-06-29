@@ -176,6 +176,7 @@ body {
 /* ── Dashboard layout ── */
 
 body.dashboard-view {
+  --dock-offset: max(48px, calc(env(safe-area-inset-bottom, 0px) + 28px));
   min-height: 100dvh;
   color-scheme: light;
   --bg: #ffffff;
@@ -599,7 +600,7 @@ h1 {
   --glass-border: rgba(255, 255, 255, 0.42);
   position: fixed;
   left: 50%;
-  bottom: max(20px, env(safe-area-inset-bottom, 20px));
+  bottom: var(--dock-offset, max(48px, calc(env(safe-area-inset-bottom, 0px) + 28px)));
   transform: translateX(-50%);
   z-index: 100;
   display: inline-flex;
@@ -778,7 +779,7 @@ h1 {
   --glass-border: rgba(255, 255, 255, 0.4);
   position: fixed;
   left: 50%;
-  bottom: calc(max(20px, env(safe-area-inset-bottom, 20px)) + 60px);
+  bottom: calc(var(--dock-offset, max(48px, calc(env(safe-area-inset-bottom, 0px) + 28px))) + 60px);
   transform: translateX(-50%);
   z-index: 101;
   padding: 9px 16px;
