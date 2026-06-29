@@ -48,4 +48,11 @@ Publish rich HTML reports to the user's Hub instance on their Tailnet.
 
 ## If MCP is unavailable
 
-Tell the user to run `./scripts/setup.sh` and add the Hub MCP server to Claude Code.
+Read the repo README (`README.md`) and run setup for the user:
+
+```bash
+cd /path/to/hub
+uv sync && uv run hub init --mcp
+```
+
+Then ask the user to restart Claude Code. See the **Troubleshooting** section in the README if tools still don't appear.
