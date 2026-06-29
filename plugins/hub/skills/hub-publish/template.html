@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{title}}</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --accent: #2563eb;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0b1220;
+        --surface: #111827;
+        --text: #e5e7eb;
+        --muted: #94a3b8;
+        --border: #1f2937;
+        --accent: #60a5fa;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    .wrap {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2rem 1.25rem 3rem;
+    }
+    header {
+      margin-bottom: 2rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h1 {
+      margin: 0 0 0.5rem;
+      font-size: 2rem;
+      line-height: 1.2;
+    }
+    .meta {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    h2 {
+      margin: 2rem 0 0.75rem;
+      font-size: 1.25rem;
+    }
+    h3 {
+      margin: 1.5rem 0 0.5rem;
+      font-size: 1.05rem;
+    }
+    p, li { max-width: 75ch; }
+    a { color: var(--accent); }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 1rem 0;
+    }
+    th, td {
+      padding: 0.65rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      background: color-mix(in srgb, var(--surface) 90%, var(--border));
+    }
+    code, pre {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.9em;
+    }
+    pre {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      overflow-x: auto;
+    }
+    pre.mermaid {
+      background: transparent;
+      border: 0;
+      padding: 0;
+      overflow: visible;
+      font-family: inherit;
+      text-align: center;
+    }
+    .mermaid svg {
+      max-width: 100%;
+      height: auto;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      margin: 1rem 0;
+    }
+    .summary {
+      font-size: 1.05rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>{{title}}</h1>
+      <div class="meta">Generated {{generated_at}}</div>
+    </header>
+    <main>
+      {{body}}
+    </main>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>
+    (function () {
+      function runMermaid() {
+        mermaid.initialize({
+          startOnLoad: false,
+          theme: window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "neutral",
+          securityLevel: "loose",
+        });
+        mermaid.run({ querySelector: ".mermaid" }).catch(console.error);
+      }
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", runMermaid);
+      } else {
+        runMermaid();
+      }
+    })();
+  </script>
+</body>
+</html>

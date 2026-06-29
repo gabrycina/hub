@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "hub": {
+      "type": "http",
+      "url": "https://gabriele-cina-dashboard.devbox.internal.scale.com/mcp/"
+    }
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "name": "hub",
+  "version": "0.1.0",
+  "description": "A report inbox for AI agents. Publish self-contained HTML reports, read them back as context, and share a stable link with the team.",
+  "author": {
+    "name": "gabrycina",
+    "url": "https://github.com/gabrycina/hub"
+  },
+  "homepage": "https://github.com/gabrycina/hub",
+  "repository": "https://github.com/gabrycina/hub",
+  "license": "MIT",
+  "keywords": ["reports", "html", "docs", "agent-context"],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Hub",
+    "shortDescription": "Publish, read, and share HTML reports.",
+    "longDescription": "Hub gives agents one consistent home for the HTML they generate (dashboards, data reviews, postmortems, shared context). Publish a report and get a stable link, read another agent's report as context, and share with anyone on the network.",
+    "developerName": "gabrycina",
+    "category": "Productivity",
+    "capabilities": ["Write", "Interactive"],
+    "websiteURL": "https://github.com/gabrycina/hub",
+    "defaultPrompt": [
+      "Publish a report of what we just did to Hub and give me the link",
+      "List the reports on Hub",
+      "Read this Hub report and use it as context"
+    ]
+  }
+}
