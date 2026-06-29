@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/icon.jpg" alt="Hub" width="128">
+  <img src="docs/icon.png" alt="Hub" width="128">
 </p>
 
 # Hub
