@@ -1,0 +1,20 @@
+{% if artifacts %}
+<div id="artifact-list" class="file-list">
+  <div class="file-list-head" aria-hidden="true">
+    <span class="col-name">Name</span>
+    <span class="col-meta">Info</span>
+    <span class="col-date">Updated</span>
+    <span class="col-size">Size</span>
+    <span class="col-actions"></span>
+  </div>
+  {% for artifact in artifacts %}
+  {% set can_manage = auth.user == artifact.owner %}
+  {% include "partials/artifact_row.html" %}
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+  <p class="empty-state-title">No reports{% if query %} matching “{{ query }}”{% endif %}</p>
+  <p class="empty-state-desc">Post one from your AI agent with the <code>hub-publish</code> skill.</p>
+</div>
+{% endif %}

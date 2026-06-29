@@ -8,6 +8,7 @@ from hub.auth import AuthContext, can_view, get_auth, get_optional_auth
 from hub.config import Settings, get_settings
 from hub.db import Database, to_artifact
 from hub.models import Visibility
+from hub.owner import resolved_owner
 from hub.storage import ArtifactStorage
 
 TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "templates"
@@ -34,6 +35,33 @@ def _format_bytes(size: int) -> str:
 templates.env.filters["format_bytes"] = _format_bytes
 
 
+def _dashboard_context(
+    *,
+    auth: AuthContext,
+    settings: Settings,
+    db: Database,
+    scope: str,
+    q: str | None,
+) -> dict:
+    hub_owner = resolved_owner(settings)
+    rows = db.list(
+        viewer=auth.user,
+        hub_owner=hub_owner,
+        scope=scope,
+        query=q,
+    )
+    artifacts = [to_artifact(row, settings.public_url) for row in rows]
+    return {
+        "artifacts": artifacts,
+        "scope": scope,
+        "query": q or "",
+        "auth": auth,
+        "settings": settings,
+        "hub_owner": hub_owner,
+        "is_hub_owner": auth.user == hub_owner,
+    }
+
+
 @router.get("/", response_class=HTMLResponse)
 def dashboard(
     request: Request,
@@ -43,24 +71,26 @@ def dashboard(
     settings: Settings = Depends(get_settings),
     db: Database = Depends(get_db),
 ) -> HTMLResponse:
-    rows = db.list(
-        viewer=auth.user,
-        hub_owner=settings.owner,
-        scope=scope,
-        query=q,
-    )
-    artifacts = [to_artifact(row, settings.public_url) for row in rows]
     return templates.TemplateResponse(
         request,
         "dashboard.html",
-        {
-            "artifacts": artifacts,
-            "scope": scope,
-            "query": q or "",
-            "auth": auth,
-            "settings": settings,
-            "is_hub_owner": auth.user == settings.owner,
-        },
+        _dashboard_context(auth=auth, settings=settings, db=db, scope=scope, q=q),
+    )
+
+
+@router.get("/partials/reports", response_class=HTMLResponse)
+def reports_partial(
+    request: Request,
+    scope: str = Query("all", pattern="^(mine|shared|all)$"),
+    q: str | None = None,
+    auth: AuthContext = Depends(get_auth),
+    settings: Settings = Depends(get_settings),
+    db: Database = Depends(get_db),
+) -> HTMLResponse:
+    return templates.TemplateResponse(
+        request,
+        "partials/artifact_list.html",
+        _dashboard_context(auth=auth, settings=settings, db=db, scope=scope, q=q),
     )
 
 

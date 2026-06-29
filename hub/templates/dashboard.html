@@ -10,54 +10,97 @@
     {% if is_hub_owner %}
     Your personal report inbox on the tailnet.
     {% else %}
-    Shared reports from {{ settings.owner }}'s hub.
+    Shared reports from {{ hub_owner }}'s hub.
     {% endif %}
   </p>
 </section>
 
-<div class="dashboard-toolbar">
-  <nav class="segmented-control" aria-label="Report filters">
-    <a href="/?scope=mine{% if query %}&q={{ query }}{% endif %}"
-       class="segment{% if scope == 'mine' %} active{% endif %}">Mine</a>
-    <a href="/?scope=shared{% if query %}&q={{ query }}{% endif %}"
-       class="segment{% if scope == 'shared' %} active{% endif %}">Shared</a>
-    <a href="/?scope=all{% if query %}&q={{ query }}{% endif %}"
-       class="segment{% if scope == 'all' %} active{% endif %}">All</a>
-  </nav>
-
-  <form class="search-field liquid-glass" method="get" action="/">
-    <input type="hidden" name="scope" value="{{ scope }}">
-    <span class="search-icon" aria-hidden="true">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-    </span>
-    <input type="search" name="q" value="{{ query }}" placeholder="Search title, tags, project…" aria-label="Search reports">
-    {% if query %}
-    <a href="/?scope={{ scope }}" class="search-clear" aria-label="Clear search">&times;</a>
-    {% endif %}
-  </form>
+<div id="artifact-results">
+  {% include "partials/artifact_list.html" %}
 </div>
 
-{% if artifacts %}
-<div id="artifact-list" class="artifact-grid">
-  {% for artifact in artifacts %}
-  {% include "partials/artifact_row.html" %}
-  {% endfor %}
-</div>
-{% else %}
-<div class="empty-state liquid-glass">
-  <div class="empty-state-icon" aria-hidden="true">
-    <svg width="40" height="40" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="16" height="16" rx="3" stroke="currentColor" stroke-width="1.5"/><path d="M8 9h8M8 13h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-  </div>
-  <p class="empty-state-title">No reports yet</p>
-  <p class="empty-state-desc">Post one from your AI agent with the <code>hub-publish</code> skill.</p>
-</div>
-{% endif %}
+<nav class="hub-dock liquid-glass" id="hub-dock" aria-label="Search and filters">
+  <input type="hidden" name="scope" id="scope-input" value="{{ scope }}">
+
+  <button type="button" class="hub-dock-btn hub-filter{% if scope == 'mine' %} active{% endif %}" data-scope="mine" aria-label="Mine">
+    <svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" fill="currentColor"/></svg>
+    <span class="hub-dock-label">Mine</span>
+  </button>
+  <button type="button" class="hub-dock-btn hub-filter{% if scope == 'shared' %} active{% endif %}" data-scope="shared" aria-label="Shared">
+    <svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" fill="currentColor"/></svg>
+    <span class="hub-dock-label">Shared</span>
+  </button>
+  <button type="button" class="hub-dock-btn hub-filter{% if scope == 'all' %} active{% endif %}" data-scope="all" aria-label="All">
+    <svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z" fill="currentColor"/></svg>
+    <span class="hub-dock-label">All</span>
+  </button>
+
+  <span class="hub-dock-sep" aria-hidden="true"></span>
+
+  <label class="hub-dock-search">
+    <svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" fill="none"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <input
+      type="search"
+      id="search-input"
+      name="q"
+      value="{{ query }}"
+      placeholder="Search…"
+      aria-label="Search reports"
+      autocomplete="off"
+      hx-get="/partials/reports"
+      hx-trigger="input changed delay:150ms, scopeChanged"
+      hx-target="#artifact-results"
+      hx-include="#scope-input"
+    >
+    <span class="hub-dock-label">Search</span>
+  </label>
+</nav>
+
+<div class="hub-toast" id="hub-toast" hidden>Link copied</div>
 
 <script>
-if (typeof copyLink !== 'function') {
-  function copyLink(url) {
-    navigator.clipboard.writeText(url).catch(() => prompt('Copy this link:', url));
+async function shareReport(btn) {
+  const url = btn.dataset.url;
+  const title = btn.dataset.title;
+  const toast = document.getElementById('hub-toast');
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title, url });
+      return;
+    } catch (err) {
+      if (err && err.name === 'AbortError') return;
+    }
+  }
+
+  try {
+    await navigator.clipboard.writeText(url);
+    if (toast) {
+      toast.textContent = 'Link copied';
+      toast.hidden = false;
+      clearTimeout(shareReport._t);
+      shareReport._t = setTimeout(() => { toast.hidden = true; }, 2200);
+    }
+  } catch {
+    prompt('Copy this link:', url);
   }
 }
+
+(function () {
+  const scopeInput = document.getElementById('scope-input');
+  const searchInput = document.getElementById('search-input');
+  const dock = document.getElementById('hub-dock');
+  if (!scopeInput || !searchInput || !dock) return;
+
+  document.querySelectorAll('.hub-filter').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      scopeInput.value = btn.dataset.scope;
+      document.querySelectorAll('.hub-filter').forEach((b) => {
+        b.classList.toggle('active', b === btn);
+      });
+      htmx.trigger(searchInput, 'scopeChanged');
+    });
+  });
+})();
 </script>
 {% endblock %}
