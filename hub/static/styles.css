@@ -130,7 +130,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.85rem 0;
+  padding: 0.65rem 0;
 }
 
 .brand {
@@ -142,8 +142,8 @@ body {
 
 .brand-logo {
   display: block;
-  height: 32px;
-  width: 32px;
+  height: 96px;
+  width: 96px;
 }
 
 .header-meta {
