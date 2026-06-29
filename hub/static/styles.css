@@ -355,10 +355,7 @@ h1 {
 
 .row-menu-bubbles {
   position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 0;
-  height: 0;
+  inset: 0;
   z-index: 30;
   pointer-events: none;
 }
@@ -366,10 +363,11 @@ h1 {
 .row-menu-bubbles::before {
   content: "";
   position: absolute;
-  left: -66px;
-  top: -66px;
-  width: 132px;
-  height: 132px;
+  left: 50%;
+  top: 50%;
+  width: 150px;
+  height: 150px;
+  margin: -75px 0 0 -75px;
   pointer-events: none;
 }
 
@@ -381,14 +379,14 @@ h1 {
 
 .row-bubble {
   position: absolute;
-  left: 0;
-  top: 0;
+  left: calc(50% + var(--bubble-x));
+  top: calc(50% + var(--bubble-y));
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 36px;
   height: 36px;
-  margin: -18px 0 0 -18px;
+  margin: 0;
   padding: 0;
   border: 0;
   border-radius: 50%;
@@ -431,7 +429,7 @@ h1 {
 .row-menu:focus-within .row-bubble {
   opacity: 1;
   pointer-events: auto;
-  transform: translate(calc(-50% + var(--bubble-x)), calc(-50% + var(--bubble-y))) scale(1);
+  transform: translate(-50%, -50%) scale(1);
 }
 
 .row-menu.is-hover .row-bubble:nth-child(1),
