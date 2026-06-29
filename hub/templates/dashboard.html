@@ -54,9 +54,11 @@
 <div class="hub-toast" id="hub-toast" hidden>Link copied</div>
 
 <script>
-async function shareReport(btn) {
-  const url = btn.dataset.url;
-  const title = btn.dataset.title;
+async function shareReport(el) {
+  const row = el.closest('.file-row');
+  if (!row) return;
+  const url = row.dataset.url;
+  const title = row.dataset.title;
   const toast = document.getElementById('hub-toast');
 
   if (navigator.share) {

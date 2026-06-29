@@ -35,6 +35,11 @@ def _format_bytes(size: int) -> str:
 templates.env.filters["format_bytes"] = _format_bytes
 
 
+def _can_manage_artifact(row: dict, auth: AuthContext, settings: Settings) -> bool:
+    hub_owner = resolved_owner(settings, auth)
+    return auth.user == hub_owner or auth.user == row["owner"]
+
+
 def _dashboard_context(
     *,
     auth: AuthContext,
@@ -207,7 +212,7 @@ def toggle_visibility(
     row = db.get(artifact_id)
     if not row:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
-    if row["owner"] != auth.user:
+    if not _can_manage_artifact(row, auth, settings):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
 
     updated = db.update(artifact_id, visibility=Visibility(visibility))
@@ -224,7 +229,7 @@ def toggle_visibility(
             "settings": settings,
             "hub_owner": hub_owner,
             "is_hub_owner": auth.user == hub_owner,
-            "can_manage": True,
+            "can_manage": _can_manage_artifact(updated, auth, settings),
         },
     )
 
@@ -233,13 +238,14 @@ def toggle_visibility(
 def delete_from_dashboard(
     artifact_id: str,
     auth: AuthContext = Depends(get_auth),
+    settings: Settings = Depends(get_settings),
     db: Database = Depends(get_db),
     storage: ArtifactStorage = Depends(get_storage),
 ) -> None:
     row = db.get(artifact_id)
     if not row:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
-    if row["owner"] != auth.user:
+    if not _can_manage_artifact(row, auth, settings):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
     db.delete(artifact_id)
     storage.delete(artifact_id)
