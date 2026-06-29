@@ -101,3 +101,21 @@ def test_delete_artifact(temp_hub, auth_headers):
     deleted = client.delete(f"/api/artifacts/{artifact_id}", headers=auth_headers)
     assert deleted.status_code == 204
     assert not (data_dir / "artifacts" / f"{artifact_id}.html").exists()
+
+
+def test_dashboard_delete_returns_no_content(temp_hub, auth_headers):
+    client, _ = temp_hub
+    created = client.post(
+        "/api/artifacts",
+        json={
+            "html": "<html><body>gone</body></html>",
+            "title": "Gone",
+            "visibility": "private",
+        },
+        headers=auth_headers,
+    )
+    artifact_id = created.json()["id"]
+
+    deleted = client.delete(f"/a/{artifact_id}", headers=auth_headers)
+    assert deleted.status_code == 204
+    assert deleted.text == ""
