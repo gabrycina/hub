@@ -31,3 +31,12 @@ def test_private_stays_owner_only_in_local_mode():
 def test_brand_name_default_and_custom():
     assert Settings(site_name="").brand_name == "Your Hub"
     assert Settings(site_name="Gen AI").brand_name == "Gen AI Hub"
+
+
+def test_parse_report_id_accepts_id_or_url():
+    from hub_mcp.server import _parse_report_id
+
+    assert _parse_report_id("abc123") == "abc123"
+    assert _parse_report_id("http://host:8000/a/abc123") == "abc123"
+    assert _parse_report_id("http://host:8000/a/abc123/") == "abc123"
+    assert _parse_report_id("http://host:8000/a/abc123/raw") == "abc123"

@@ -17,6 +17,8 @@ Tools:
 - post_report: publish a NEW report; returns its url.
 - update_report: revise an EXISTING report in place (same url). Prefer this over
   post_report when iterating on something you already published.
+- read_report: read another report's HTML by id or URL — use this to consume a
+  report a teammate's agent published and use it as context.
 - list_reports / get_report_url / set_report_visibility: browse and manage.
 
 When you generate a substantial HTML artifact worth sharing, offer to publish it.
@@ -59,6 +61,21 @@ def _request(method: str, path: str, **kwargs: Any) -> Any:
         if response.status_code == 204:
             return None
         return response.json()
+
+
+def _request_text(path: str) -> str:
+    with httpx.Client(base_url=_hub_url(), headers=_headers(), timeout=30.0) as client:
+        response = client.get(path)
+        response.raise_for_status()
+        return response.text
+
+
+def _parse_report_id(report: str) -> str:
+    """Accept either a bare report id or a full report URL (…/a/<id>)."""
+    report = report.strip()
+    if "/a/" in report:
+        report = report.split("/a/", 1)[1]
+    return report.strip("/").split("/")[0].split("?")[0]
 
 
 def post_report(
@@ -130,11 +147,40 @@ def get_report_url(report_id: str) -> str:
     return result["url"]
 
 
+def read_report(report: str) -> str:
+    """Read the HTML content of an existing report so you can use it as context —
+    e.g. to consume a report another agent on the team published. Accepts either a
+    report id or a full report URL (…/a/<id>)."""
+    report_id = _parse_report_id(report)
+    return _request_text(f"/a/{report_id}/download")
+
+
 mcp.tool(post_report)
 mcp.tool(update_report)
+mcp.tool(read_report)
 mcp.tool(list_reports)
 mcp.tool(set_report_visibility)
 mcp.tool(get_report_url)
+
+
+@mcp.prompt
+def publish(topic: str = "") -> str:
+    """Publish the current work as a Hub report."""
+    what = f"about {topic}" if topic else "of what we just worked on"
+    return (
+        f"Create a polished, self-contained HTML report {what} and publish it to "
+        "Hub with post_report. Then open the returned URL in my browser and give "
+        "me the link."
+    )
+
+
+@mcp.prompt
+def read(report: str) -> str:
+    """Pull in a Hub report (by id or URL) as context."""
+    return (
+        f"Read the Hub report {report} with read_report and use its content as "
+        "context for what I ask next. Summarize it briefly first."
+    )
 
 
 def cli() -> None:

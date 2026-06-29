@@ -200,11 +200,12 @@ post_report(
 |------|-----|
 | `post_report` | Publish HTML (new report, new URL) |
 | `update_report` | Edit an existing report in place — same id and URL |
+| `read_report` | Read a report's HTML by id or URL (consume another agent's report) |
 | `list_reports` | List reports (`scope`: `mine`, `shared`, `all`) |
 | `set_report_visibility` | Toggle `private` / `shareable` |
 | `get_report_url` | Get link for existing report |
 
-To **revise** a report, call `update_report(report_id, html=...)` rather than `post_report` — it keeps the link stable instead of minting a new one.
+To **revise** a report, call `update_report(report_id, html=...)` rather than `post_report` — it keeps the link stable instead of minting a new one. To **consume** a report another agent published, pass its link (or id) to `read_report`. Server `prompts` also expose `/publish` and `/read` slash commands.
 
 A local stdio MCP loads config from `~/.config/hub/config.env`; a remote MCP (`--transport http`) runs on the server and needs nothing locally.
 
