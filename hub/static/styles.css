@@ -134,11 +134,16 @@ body {
 }
 
 .brand {
-  font-weight: 700;
-  font-size: 1.35rem;
-  letter-spacing: -0.03em;
-  color: var(--text);
+  display: inline-flex;
+  align-items: center;
+  line-height: 0;
   text-decoration: none;
+}
+
+.brand-logo {
+  display: block;
+  height: 32px;
+  width: 32px;
 }
 
 .header-meta {
