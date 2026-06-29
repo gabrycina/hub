@@ -55,3 +55,12 @@ def cli() -> None:
     from hub.cli import main
 
     raise SystemExit(main())
+
+
+if __name__ == "__main__":
+    import sys
+
+    if len(sys.argv) > 1 and sys.argv[1] == "run":
+        run_server()
+    else:
+        cli()
