@@ -387,12 +387,18 @@ h1 {
   padding: 0.35rem 0.65rem;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
-  background: var(--bg-accent);
+  background: rgba(118, 118, 128, 0.14);
   color: var(--text);
   font: 500 0.75rem/1 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   text-decoration: none;
   cursor: pointer;
   transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+@media (prefers-color-scheme: dark) {
+  .glass-btn {
+    background: rgba(120, 120, 128, 0.28);
+  }
 }
 
 .glass-btn:hover {
@@ -413,7 +419,7 @@ h1 {
 
 .glass-btn svg {
   flex-shrink: 0;
-  opacity: 0.75;
+  opacity: 0.9;
 }
 
 .glass-btn:hover svg {
@@ -507,6 +513,8 @@ body.report-view .report-main {
 
 .report-dock {
   --dock-expand: 0;
+  --dock-fg: rgba(0, 0, 0, 0.78);
+  --dock-fg-hover: rgba(0, 0, 0, 0.92);
   position: fixed;
   left: 50%;
   bottom: max(20px, env(safe-area-inset-bottom, 20px));
@@ -517,15 +525,15 @@ body.report-view .report-main {
   gap: 2px;
   padding: 5px;
   border-radius: var(--radius-pill);
-  background: rgba(72, 72, 80, 0.28);
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  backdrop-filter: var(--glass-blur) brightness(1.04);
-  -webkit-backdrop-filter: var(--glass-blur) brightness(1.04);
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   box-shadow:
-    0 10px 36px rgba(0, 0, 0, 0.16),
-    0 2px 6px rgba(0, 0, 0, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.38),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.06);
+    0 10px 36px rgba(0, 0, 0, 0.1),
+    0 2px 6px rgba(0, 0, 0, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.04);
   pointer-events: auto;
   transition:
     padding 0.28s var(--ease-spring),
@@ -539,20 +547,20 @@ body.report-view .report-main {
 .report-dock.report-dock--scrolled {
   --dock-expand: 1;
   padding: 6px;
-  background: rgba(68, 68, 76, 0.34);
+  background: rgba(255, 255, 255, 0.74);
   box-shadow:
-    0 14px 44px rgba(0, 0, 0, 0.2),
-    0 4px 10px rgba(0, 0, 0, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.42),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.08);
+    0 14px 44px rgba(0, 0, 0, 0.14),
+    0 4px 10px rgba(0, 0, 0, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.05);
 }
 
 .report-dock-sep {
   width: 1px;
   height: calc(16px + var(--dock-expand) * 4px);
-  background: rgba(255, 255, 255, 0.22);
+  background: rgba(0, 0, 0, 0.14);
   flex-shrink: 0;
-  opacity: calc(0.4 + var(--dock-expand) * 0.6);
+  opacity: calc(0.45 + var(--dock-expand) * 0.55);
   transition: height 0.28s ease, opacity 0.28s ease;
 }
 
@@ -569,12 +577,11 @@ body.report-view .report-main {
   border: 0;
   border-radius: var(--radius-pill);
   background: transparent;
-  color: rgba(255, 255, 255, 0.88);
+  color: var(--dock-fg);
   font: 500 14px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   text-decoration: none;
   cursor: pointer;
   white-space: nowrap;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
   transition:
     background 0.2s ease,
     color 0.2s ease,
@@ -584,8 +591,7 @@ body.report-view .report-main {
 
 .report-dock-btn svg {
   flex-shrink: 0;
-  opacity: 0.92;
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.15));
+  opacity: 0.88;
   transition: opacity 0.2s ease;
 }
 
@@ -603,12 +609,12 @@ body.report-view .report-main {
 .report-dock:hover .report-dock-btn,
 .report-dock:focus-within .report-dock-btn,
 .report-dock.report-dock--scrolled .report-dock-btn {
-  color: rgba(255, 255, 255, 0.98);
+  color: var(--dock-fg-hover);
 }
 
 .report-dock-btn:hover {
-  background: rgba(255, 255, 255, 0.14);
-  color: #fff;
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--dock-fg-hover);
 }
 
 .report-dock-btn:hover svg {
@@ -616,7 +622,7 @@ body.report-view .report-main {
 }
 
 .report-dock-btn:active {
-  background: rgba(255, 255, 255, 0.22);
+  background: rgba(0, 0, 0, 0.1);
 }
 
 .report-toast {
@@ -627,16 +633,16 @@ body.report-view .report-main {
   z-index: 11;
   padding: 9px 16px;
   border-radius: var(--radius-pill);
-  background: rgba(72, 72, 80, 0.36);
-  border: 1px solid rgba(255, 255, 255, 0.26);
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
-  color: rgba(255, 255, 255, 0.95);
+  color: rgba(0, 0, 0, 0.82);
   font-size: 13px;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  font-weight: 500;
   box-shadow:
-    0 8px 28px rgba(0, 0, 0, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.32);
+    0 8px 28px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
   pointer-events: none;
 }
 
