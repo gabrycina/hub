@@ -1,8 +1,7 @@
 :root {
   color-scheme: light dark;
-  --bg: #f2f2f7;
-  --bg-accent: rgba(120, 120, 128, 0.08);
-  --surface: rgba(255, 255, 255, 0.72);
+  --bg: #e8e8ed;
+  --bg-accent: rgba(120, 120, 128, 0.12);
   --surface-solid: #ffffff;
   --text: #1d1d1f;
   --muted: rgba(60, 60, 67, 0.6);
@@ -13,10 +12,19 @@
   --danger: #ff3b30;
   --private: rgba(60, 60, 67, 0.6);
   --shareable: #34c759;
-  --glass-blur: blur(32px) saturate(185%);
-  --glass-inset: inset 0 1px 0 rgba(255, 255, 255, 0.72);
-  --glass-shadow: 0 2px 12px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
-  --glass-shadow-hover: 0 8px 28px rgba(0, 0, 0, 0.1), 0 2px 6px rgba(0, 0, 0, 0.05);
+  --glass-tint: rgba(255, 255, 255, 0.14);
+  --glass-tint-hover: rgba(255, 255, 255, 0.2);
+  --glass-border: rgba(255, 255, 255, 0.45);
+  --glass-blur: blur(40px) saturate(190%) brightness(1.04);
+  --glass-shine: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.55) 0%,
+    rgba(255, 255, 255, 0.12) 38%,
+    rgba(255, 255, 255, 0) 58%
+  );
+  --glass-inset: inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 -1px 0 rgba(0, 0, 0, 0.04);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.05);
+  --glass-shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.14), 0 4px 12px rgba(0, 0, 0, 0.07);
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
@@ -26,9 +34,8 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #000000;
-    --bg-accent: rgba(120, 120, 128, 0.16);
-    --surface: rgba(44, 44, 46, 0.72);
+    --bg: #0c0c0e;
+    --bg-accent: rgba(120, 120, 128, 0.2);
     --surface-solid: #1c1c1e;
     --text: #f5f5f7;
     --muted: rgba(235, 235, 245, 0.6);
@@ -39,9 +46,58 @@
     --danger: #ff453a;
     --private: rgba(235, 235, 245, 0.5);
     --shareable: #30d158;
-    --glass-inset: inset 0 1px 0 rgba(255, 255, 255, 0.08);
-    --glass-shadow: 0 2px 12px rgba(0, 0, 0, 0.32), 0 1px 3px rgba(0, 0, 0, 0.2);
-    --glass-shadow-hover: 0 8px 28px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.25);
+    --glass-tint: rgba(60, 60, 68, 0.32);
+    --glass-tint-hover: rgba(72, 72, 80, 0.42);
+    --glass-border: rgba(255, 255, 255, 0.16);
+    --glass-shine: linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.18) 0%,
+      rgba(255, 255, 255, 0.05) 38%,
+      rgba(255, 255, 255, 0) 58%
+    );
+    --glass-inset: inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.36), 0 2px 8px rgba(0, 0, 0, 0.22);
+    --glass-shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.48), 0 4px 12px rgba(0, 0, 0, 0.28);
+  }
+}
+
+/* Layered liquid glass: blur on ::before, specular on ::after, content above */
+.liquid-glass {
+  position: relative;
+  isolation: isolate;
+  background: transparent;
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+.liquid-glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--glass-tint);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-inset);
+  z-index: -2;
+  pointer-events: none;
+}
+
+.liquid-glass::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--glass-shine);
+  z-index: -1;
+  pointer-events: none;
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .liquid-glass::before {
+    background: color-mix(in srgb, var(--surface-solid) 88%, transparent);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 }
 
@@ -67,10 +123,11 @@ body {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: var(--surface);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--glass-border);
+  border-left: 0;
+  border-right: 0;
+  border-top: 0;
+  border-radius: 0;
   box-shadow: var(--glass-shadow);
 }
 
@@ -129,16 +186,18 @@ body {
 body.dashboard-view {
   min-height: 100dvh;
   background:
-    radial-gradient(ellipse 70% 50% at 50% -10%, rgba(0, 122, 255, 0.07), transparent),
-    radial-gradient(ellipse 50% 40% at 100% 0%, rgba(175, 82, 222, 0.05), transparent),
+    radial-gradient(ellipse 80% 60% at 10% 0%, rgba(0, 122, 255, 0.18), transparent 55%),
+    radial-gradient(ellipse 70% 50% at 90% 10%, rgba(175, 82, 222, 0.14), transparent 50%),
+    radial-gradient(ellipse 60% 40% at 50% 100%, rgba(52, 199, 89, 0.1), transparent 45%),
     var(--bg);
 }
 
 @media (prefers-color-scheme: dark) {
   body.dashboard-view {
     background:
-      radial-gradient(ellipse 70% 50% at 50% -10%, rgba(10, 132, 255, 0.12), transparent),
-      radial-gradient(ellipse 50% 40% at 100% 0%, rgba(191, 90, 242, 0.08), transparent),
+      radial-gradient(ellipse 80% 60% at 10% 0%, rgba(10, 132, 255, 0.22), transparent 55%),
+      radial-gradient(ellipse 70% 50% at 90% 10%, rgba(191, 90, 242, 0.16), transparent 50%),
+      radial-gradient(ellipse 60% 40% at 50% 100%, rgba(48, 209, 88, 0.1), transparent 45%),
       var(--bg);
   }
 }
@@ -213,17 +272,14 @@ h1 {
   min-width: min(100%, 260px);
   padding: 0 0.85rem;
   border-radius: var(--radius-md);
-  background: var(--surface);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--border-strong);
-  box-shadow: var(--glass-shadow), var(--glass-inset);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .search-field:focus-within {
-  border-color: color-mix(in srgb, var(--accent) 50%, var(--border-strong));
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent), var(--glass-shadow), var(--glass-inset);
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--glass-border));
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent),
+    var(--glass-shadow);
 }
 
 .search-icon {
@@ -281,17 +337,16 @@ h1 {
   gap: 0.75rem;
   padding: 1.15rem 1.2rem 1rem;
   border-radius: var(--radius-lg);
-  background: var(--surface);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--border-strong);
-  box-shadow: var(--glass-shadow), var(--glass-inset);
   transition: transform 0.22s var(--ease-spring), box-shadow 0.22s var(--ease-spring);
 }
 
 .artifact-card:hover {
   transform: translateY(-2px);
-  box-shadow: var(--glass-shadow-hover), var(--glass-inset);
+  box-shadow: var(--glass-shadow-hover);
+}
+
+.artifact-card:hover::before {
+  background: var(--glass-tint-hover);
 }
 
 .artifact-card-main {
@@ -440,11 +495,7 @@ h1 {
   padding: 4rem 2rem;
   text-align: center;
   border-radius: var(--radius-lg);
-  background: var(--surface);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border: 1px dashed var(--border-strong);
-  box-shadow: var(--glass-shadow), var(--glass-inset);
+  border-style: dashed;
 }
 
 .empty-state-icon {
@@ -513,8 +564,11 @@ body.report-view .report-main {
 
 .report-dock {
   --dock-expand: 0;
-  --dock-fg: rgba(0, 0, 0, 0.78);
-  --dock-fg-hover: rgba(0, 0, 0, 0.92);
+  --dock-fg: rgba(0, 0, 0, 0.82);
+  --dock-fg-hover: rgba(0, 0, 0, 0.95);
+  --glass-tint: rgba(120, 120, 128, 0.18);
+  --glass-tint-hover: rgba(120, 120, 128, 0.26);
+  --glass-border: rgba(255, 255, 255, 0.42);
   position: fixed;
   left: 50%;
   bottom: max(20px, env(safe-area-inset-bottom, 20px));
@@ -525,20 +579,10 @@ body.report-view .report-main {
   gap: 2px;
   padding: 5px;
   border-radius: var(--radius-pill);
-  background: rgba(255, 255, 255, 0.62);
-  border: 1px solid rgba(255, 255, 255, 0.72);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  box-shadow:
-    0 10px 36px rgba(0, 0, 0, 0.1),
-    0 2px 6px rgba(0, 0, 0, 0.05),
-    inset 0 1px 0 rgba(255, 255, 255, 0.92),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.04);
   pointer-events: auto;
   transition:
     padding 0.28s var(--ease-spring),
     gap 0.28s var(--ease-spring),
-    background 0.28s ease,
     box-shadow 0.28s ease;
 }
 
@@ -547,15 +591,18 @@ body.report-view .report-main {
 .report-dock.report-dock--scrolled {
   --dock-expand: 1;
   padding: 6px;
-  background: rgba(255, 255, 255, 0.74);
-  box-shadow:
-    0 14px 44px rgba(0, 0, 0, 0.14),
-    0 4px 10px rgba(0, 0, 0, 0.07),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.05);
+  box-shadow: var(--glass-shadow-hover);
+}
+
+.report-dock:hover::before,
+.report-dock:focus-within::before,
+.report-dock.report-dock--scrolled::before {
+  background: var(--glass-tint-hover);
 }
 
 .report-dock-sep {
+  position: relative;
+  z-index: 1;
   width: 1px;
   height: calc(16px + var(--dock-expand) * 4px);
   background: rgba(0, 0, 0, 0.14);
@@ -565,6 +612,8 @@ body.report-view .report-main {
 }
 
 .report-dock-btn {
+  position: relative;
+  z-index: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -613,7 +662,7 @@ body.report-view .report-main {
 }
 
 .report-dock-btn:hover {
-  background: rgba(0, 0, 0, 0.06);
+  background: rgba(0, 0, 0, 0.08);
   color: var(--dock-fg-hover);
 }
 
@@ -626,6 +675,8 @@ body.report-view .report-main {
 }
 
 .report-toast {
+  --glass-tint: rgba(120, 120, 128, 0.2);
+  --glass-border: rgba(255, 255, 255, 0.4);
   position: fixed;
   left: 50%;
   bottom: calc(max(20px, env(safe-area-inset-bottom, 20px)) + 60px);
@@ -633,16 +684,9 @@ body.report-view .report-main {
   z-index: 11;
   padding: 9px 16px;
   border-radius: var(--radius-pill);
-  background: rgba(255, 255, 255, 0.78);
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  color: rgba(0, 0, 0, 0.82);
+  color: rgba(0, 0, 0, 0.84);
   font-size: 13px;
   font-weight: 500;
-  box-shadow:
-    0 8px 28px rgba(0, 0, 0, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
   pointer-events: none;
 }
 

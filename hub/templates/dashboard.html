@@ -25,7 +25,7 @@
        class="segment{% if scope == 'all' %} active{% endif %}">All</a>
   </nav>
 
-  <form class="search-field" method="get" action="/">
+  <form class="search-field liquid-glass" method="get" action="/">
     <input type="hidden" name="scope" value="{{ scope }}">
     <span class="search-icon" aria-hidden="true">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
@@ -44,7 +44,7 @@
   {% endfor %}
 </div>
 {% else %}
-<div class="empty-state">
+<div class="empty-state liquid-glass">
   <div class="empty-state-icon" aria-hidden="true">
     <svg width="40" height="40" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="16" height="16" rx="3" stroke="currentColor" stroke-width="1.5"/><path d="M8 9h8M8 13h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
   </div>
