@@ -24,6 +24,9 @@ CONFIG_KEYS = (
     "HUB_PUBLIC_URL",
     "HUB_DEV_USER",
     "HUB_PORT",
+    "HUB_HOST",
+    "HUB_TRUST_NETWORK",
+    "HUB_SITE_NAME",
 )
 NOT_CONFIGURED_MSG = (
     "Hub is not configured. Run `uv run hub init --mcp` once, then restart your agent."
@@ -149,6 +152,15 @@ def _write_config_file(values: dict[str, str]) -> None:
         encoding="utf-8",
     )
     paths.CONFIG_ENV.chmod(0o600)
+
+
+def set_config_values(values: dict[str, str]) -> None:
+    """Merge values into config.env and the live environment."""
+    merged = read_config_file()
+    merged.update(values)
+    _write_config_file(merged)
+    for key, value in values.items():
+        os.environ[key] = value
 
 
 def init_config(*, repo_dir: Path | None = None) -> dict[str, str]:

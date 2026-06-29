@@ -32,9 +32,12 @@ def can_view(
     visibility: str,
     owner: str,
     viewer: str | None,
+    trust_network: bool = False,
 ) -> bool:
     if visibility == "shareable":
-        return viewer is not None
+        # In server (trust_network) mode the network is the access boundary, so a
+        # shareable report is viewable even without an identified viewer.
+        return trust_network or viewer is not None
     return viewer == owner
 
 

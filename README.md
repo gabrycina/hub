@@ -132,6 +132,23 @@ This creates config, registers MCP, starts Hub, and configures Tailscale Serve. 
 
 **Tell the user** to restart their agent after init.
 
+### Hosting mode: local vs server
+
+Hub can run two ways, chosen at init:
+
+- **Local (default):** host on your own machine, exposed to your tailnet over **Tailscale Serve**. Viewing is identity-gated (Serve injects each viewer's Tailscale identity). This is the `uv run hub init --mcp` flow above.
+- **Server:** host on an always-on box (e.g. a devbox) that peers reach directly by IP, with no Tailscale Serve. Use this when Serve isn't available on your tailnet or you want a shared, always-on inbox.
+
+```bash
+# On the server/devbox:
+uv run hub init --mcp --server --site-name "Gen AI" --public-url http://<server-ip>:17482
+uv run hub up --no-serve
+```
+
+Server mode sets `HUB_HOST=0.0.0.0` and `HUB_TRUST_NETWORK=true`: the network boundary becomes the access control, so anyone who can reach the server can view **shareable** reports without a Tailscale identity header. Publishing still requires the API token, and `private` reports stay owner-only. `--site-name` brands the dashboard title (e.g. "Gen AI Hub").
+
+To publish from an agent on your laptop to a remote Hub, point the local MCP at it by setting `HUB_URL` and `HUB_API_TOKEN` (the server's token) in `~/.config/hub/config.env`.
+
 ### Install the publish skill (recommended)
 
 ```bash

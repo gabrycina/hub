@@ -12,6 +12,7 @@ from hub.bootstrap import (
     is_initialized,
     load_config_env,
     mcp_config,
+    set_config_values,
 )
 from hub.constants import DEFAULT_HOST, DEFAULT_PORT
 from hub.mcp_agents import agent_restart_message, configure_mcp_agents, manual_mcp_snippet
@@ -25,6 +26,29 @@ def _local_url() -> str:
     host = os.environ.get("HUB_HOST", DEFAULT_HOST)
     port = os.environ.get("HUB_PORT", str(DEFAULT_PORT))
     return f"http://{host}:{port}"
+
+
+def _port() -> str:
+    import os
+
+    load_config_env()
+    return os.environ.get("HUB_PORT", str(DEFAULT_PORT))
+
+
+def _detect_server_url() -> str:
+    """Best-effort base URL others use to reach this server: the primary outbound IP."""
+    import socket
+
+    ip = "127.0.0.1"
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        # No packets are sent; this just picks the interface for the default route.
+        sock.connect(("10.255.255.255", 1))
+        ip = sock.getsockname()[0]
+        sock.close()
+    except OSError:
+        pass
+    return f"http://{ip}:{_port()}"
 
 
 def _print_serve_result(result, *, interactive: bool) -> int:
@@ -75,6 +99,26 @@ def cmd_init(args: argparse.Namespace) -> int:
     else:
         print("\nMCP config (add to your agent):")
         print(json.dumps(mcp_config(repo_dir=Path(args.repo).resolve()), indent=2))
+
+    if args.server:
+        public_url = args.public_url.rstrip("/") or _detect_server_url()
+        values = {
+            "HUB_HOST": "0.0.0.0",
+            "HUB_TRUST_NETWORK": "true",
+            "HUB_PUBLIC_URL": public_url,
+        }
+        if args.site_name:
+            values["HUB_SITE_NAME"] = args.site_name
+        set_config_values(values)
+        print("\nServer mode configured (no Tailscale Serve).")
+        print(f"  Binding:  0.0.0.0:{_port()}")
+        print(f"  Public:   {public_url}")
+        if args.site_name:
+            print(f"  Branding: {args.site_name} Hub")
+        print("  Viewing:  anyone who can reach this server can view shareable reports;")
+        print("            publishing still requires the API token.")
+        print("\nStart it with: uv run hub up --no-serve")
+        return 0
 
     if args.no_serve:
         print("\nSkipped Tailscale Serve (--no-serve).")
@@ -163,6 +207,26 @@ def build_parser() -> argparse.ArgumentParser:
         "--no-serve",
         action="store_true",
         help="Skip Tailscale Serve setup (local only)",
+    )
+    init_parser.add_argument(
+        "--server",
+        action="store_true",
+        help=(
+            "Host on a server/devbox instead of locally over Tailscale Serve: "
+            "bind to 0.0.0.0 and trust the network for viewing (anyone who can reach "
+            "the server sees shareable reports). Publishing still requires the API token."
+        ),
+    )
+    init_parser.add_argument(
+        "--site-name",
+        default="",
+        help="Branding shown in the dashboard title, e.g. 'Gen AI' renders as 'Gen AI Hub'",
+    )
+    init_parser.add_argument(
+        "--public-url",
+        default="",
+        help="Base URL others use to reach this server (e.g. http://172.31.95.176:17482). "
+        "Defaults to the detected host IP in --server mode",
     )
     init_parser.add_argument(
         "--no-open",

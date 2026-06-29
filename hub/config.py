@@ -22,7 +22,18 @@ class Settings(BaseSettings):
     api_token: str = ""
     public_url: str = DEFAULT_LOCAL_URL
     dev_user: str = ""
+    # Server mode: when true, the network boundary is the access control, so anyone
+    # who can reach the server may view shareable reports even without a Tailscale
+    # identity header (e.g. Hub on a devbox reached by VPC IP, not via Tailscale
+    # Serve). Publishing still requires the API token; private reports stay owner-only.
+    trust_network: bool = False
+    # Optional branding shown in the dashboard title (e.g. "Gen AI" -> "Gen AI Hub").
+    site_name: str = ""
     max_upload_bytes: int = 5 * 1024 * 1024
+
+    @property
+    def brand_name(self) -> str:
+        return f"{self.site_name} Hub" if self.site_name else "Your Hub"
 
     @property
     def artifacts_dir(self) -> Path:

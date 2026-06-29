@@ -117,6 +117,7 @@ def preview_artifact(
         visibility=row["visibility"],
         owner=row["owner"],
         viewer=viewer,
+        trust_network=settings.trust_network,
     ):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
 
@@ -150,6 +151,7 @@ def raw_artifact(
         visibility=row["visibility"],
         owner=row["owner"],
         viewer=viewer,
+        trust_network=settings.trust_network,
     ):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
 
@@ -186,6 +188,7 @@ def download_artifact(
         visibility=row["visibility"],
         owner=row["owner"],
         viewer=viewer,
+        trust_network=settings.trust_network,
     ):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
 
