@@ -48,11 +48,14 @@ VPN/tailnet), or **connect** (the agent points at someone else's shared Hub).
    )
    ```
 
-4. **Return to user**:
-   - The `url` from the response
-   - How it's reachable: local/server links work for people on the same
-     tailnet/VPN, not the public internet
-   - Visibility setting used
+4. **Open, then return**:
+   - **Open the report in the user's browser by default** so it pops up without
+     them clicking (macOS: `open <url>`, Linux: `xdg-open <url>`, Windows:
+     `start <url>`), and copy the link to the clipboard where possible
+     (macOS: `printf %s <url> | pbcopy`). Skip auto-open only if the user has
+     said they don't want it.
+   - Then tell them the `url`, that it's reachable on the tailnet/VPN (not the
+     public internet), and the visibility used.
 
 ## Content guidelines
 

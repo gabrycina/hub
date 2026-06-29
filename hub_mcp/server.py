@@ -8,7 +8,27 @@ from fastmcp import FastMCP
 from hub.bootstrap import ensure_hub_running, load_config_env
 from hub.constants import DEFAULT_HOST, DEFAULT_PORT
 
-mcp = FastMCP("Hub")
+HUB_INSTRUCTIONS = """\
+Hub is a shared report inbox for AI agents. You publish self-contained HTML
+reports — docs, data reviews, postmortems, architecture notes, shared context
+for other agents — and get back a stable URL anyone on the same network can open.
+
+Tools:
+- post_report: publish a NEW report; returns its url.
+- update_report: revise an EXISTING report in place (same url). Prefer this over
+  post_report when iterating on something you already published.
+- list_reports / get_report_url / set_report_visibility: browse and manage.
+
+When you generate a substantial HTML artifact worth sharing, offer to publish it.
+
+After post_report or update_report returns a url, OPEN IT in the user's default
+browser so it pops up immediately (macOS: `open <url>`; Linux: `xdg-open <url>`;
+Windows: `start <url>`), and copy it to the clipboard where possible (macOS:
+`printf %s <url> | pbcopy`). Do this by default unless the user has said they
+don't want reports auto-opened.
+"""
+
+mcp = FastMCP("Hub", instructions=HUB_INSTRUCTIONS)
 
 
 def _hub_url() -> str:
