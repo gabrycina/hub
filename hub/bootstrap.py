@@ -350,23 +350,6 @@ def _current_info(repo_dir: Path | None = None) -> dict[str, str]:
     }
 
 
-def write_claude_mcp_config(repo_dir: Path | None = None) -> Path:
-    config = mcp_config(repo_dir=repo_dir)
-    paths.CLAUDE_MCP.parent.mkdir(parents=True, exist_ok=True)
-
-    if paths.CLAUDE_MCP.exists():
-        existing = json.loads(paths.CLAUDE_MCP.read_text(encoding="utf-8") or "{}")
-        servers = existing.setdefault("mcpServers", {})
-        servers.update(config["mcpServers"])
-        paths.CLAUDE_MCP.write_text(json.dumps(existing, indent=2) + "\n", encoding="utf-8")
-    else:
-        paths.CLAUDE_MCP.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
-
-    return paths.CLAUDE_MCP
-
-
-
-
 
 def start_tailscale_serve() -> str | None:
     from hub.tailscale_serve import setup_tailscale_serve

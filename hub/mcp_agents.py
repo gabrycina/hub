@@ -49,13 +49,20 @@ def _register_cli_agent(
     repo_dir: Path,
     *,
     fallbacks: tuple[str, ...] = (),
+    extra_args: tuple[str, ...] = (),
 ) -> tuple[str, str] | None:
     resolved = _resolve_cli(cli, fallbacks)
     if not resolved:
         return None
 
     command = _stdio_command(repo_dir)
-    result = _run([resolved, "mcp", "add", HUB_SERVER_NAME, "--", *command], timeout=30)
+    # Best-effort remove first so re-running `init --mcp` is idempotent
+    # (the add subcommand errors when the server name already exists).
+    _run([resolved, "mcp", "remove", HUB_SERVER_NAME, *extra_args], timeout=30)
+    result = _run(
+        [resolved, "mcp", "add", HUB_SERVER_NAME, *extra_args, "--", *command],
+        timeout=30,
+    )
     if result.returncode != 0:
         return None
     return name, str(config_path)
@@ -66,24 +73,28 @@ def configure_mcp_agents(repo_dir: Path | None = None) -> list[tuple[str, str]]:
     repo = Path(repo_dir or Path.cwd()).resolve()
     configured: list[tuple[str, str]] = []
 
-    json_targets = (
-        ("Claude Code", paths.CLAUDE_MCP),
-        ("Cursor", paths.CURSOR_MCP),
-    )
+    json_targets = (("Cursor", paths.CURSOR_MCP),)
     for name, path in json_targets:
         configured.append(_register_json_agent(name, path, repo))
 
+    # Claude Code, Grok, and Codex own their own config files; register through
+    # their CLIs so the server lands where each agent actually reads it. Claude
+    # Code is registered at user scope so Hub is available across all projects.
     cli_targets = (
-        ("Grok Build", "grok", paths.GROK_CONFIG, ()),
+        ("Claude Code", "claude", paths.CLAUDE_CONFIG, (), ("--scope", "user")),
+        ("Grok Build", "grok", paths.GROK_CONFIG, (), ()),
         (
             "Codex",
             "codex",
             paths.CODEX_CONFIG,
             ("/Applications/Codex.app/Contents/Resources/codex",),
+            (),
         ),
     )
-    for name, cli, path, fallbacks in cli_targets:
-        entry = _register_cli_agent(name, cli, path, repo, fallbacks=fallbacks)
+    for name, cli, path, fallbacks, extra_args in cli_targets:
+        entry = _register_cli_agent(
+            name, cli, path, repo, fallbacks=fallbacks, extra_args=extra_args
+        )
         if entry:
             configured.append(entry)
 

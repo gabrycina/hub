@@ -157,7 +157,7 @@ def build_parser() -> argparse.ArgumentParser:
     init_parser.add_argument(
         "--mcp",
         action="store_true",
-        help="Write MCP config to ~/.claude/.mcp.json",
+        help="Register the Hub MCP server with detected agents (Claude Code, Cursor, Codex, Grok)",
     )
     init_parser.add_argument(
         "--no-serve",

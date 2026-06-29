@@ -112,13 +112,13 @@ uv run hub status
 | `initialized: true`, `running: false` | MCP auto-starts Hub; or `uv run hub up` |
 | `initialized: true`, `running: true` | Ready — publish |
 
-Verify MCP is registered:
+Verify MCP is registered (Claude Code):
 
 ```bash
-grep -q '"hub"' ~/.claude/.mcp.json 2>/dev/null && echo "ok" || echo "missing"
+claude mcp list | grep -q hub && echo "ok" || echo "missing"
 ```
 
-(Grok Build, Cursor, and Codex use their own MCP paths — `hub init --mcp` writes to all detected agents.)
+(Claude Code, Grok Build, and Codex are registered through their own CLIs — Claude Code at user scope, so Hub is available in every project. Cursor is written to `~/.cursor/mcp.json`. `hub init --mcp` configures all detected agents.)
 
 ## One-time setup
 
