@@ -55,7 +55,7 @@ cd /path/to/hub
 uv sync
 ```
 
-### Step 2 — Initialize Hub + register MCP
+### Step 2 — Initialize Hub, MCP, and Tailscale Serve
 
 ```bash
 uv run hub init --mcp
@@ -63,10 +63,19 @@ uv run hub init --mcp
 
 This automatically:
 - Creates `~/.config/hub/` (token, config, data)
-- Detects the user's Tailscale identity and machine URL
 - Writes the MCP entry to `~/.claude/.mcp.json`
+- Starts Hub
+- Sets up **Tailscale Serve** (opens the one-time enable link if needed)
+
+**If a browser opens:** the user must approve Tailscale Serve on their tailnet (one-time). Hub waits up to 90 seconds, then prints the enable URL if still pending.
 
 **Tell the user:** "Restart Claude Code so the Hub MCP server loads."
+
+If Serve wasn't enabled in time:
+
+```bash
+uv run hub serve-setup
+```
 
 ### Step 3 — Install the publish skill (recommended)
 
@@ -96,15 +105,17 @@ After the user restarts Claude Code, confirm MCP tools are available. You should
 
 If tools are missing, see [Troubleshooting](#troubleshooting).
 
-### Step 5 — Enable sharing (only if needed)
-
-If the user wants colleagues to open report links, run:
+### Step 5 — Verify Tailscale Serve
 
 ```bash
-uv run hub up
+uv run hub status
 ```
 
-This starts Hub and exposes it on the Tailnet via `tailscale serve`. **Skip this** if the user only needs local reports for now.
+| `serve:` value | Meaning |
+|----------------|---------|
+| `active` | `.ts.net` links work |
+| `needs_enable` | User must open `enable_url` and run `uv run hub serve-setup` |
+| `local_only` | No Tailscale — localhost only |
 
 ---
 
@@ -197,12 +208,18 @@ Hub isn't running. It should auto-start, but you can start it manually:
 uv run hub up --no-serve
 ```
 
-### Share links don't work for colleagues
+### Share links don't work / ERR_CONNECTION_REFUSED on .ts.net
 
-Colleagues need Tailnet access, and Hub needs to be exposed:
+Tailscale Serve is not active. Check:
 
 ```bash
-uv run hub up
+uv run hub status
+```
+
+If `serve: needs_enable`, open the `enable_url` and run:
+
+```bash
+uv run hub serve-setup
 ```
 
 Also confirm the report visibility is `shareable`, not `private`.
@@ -220,10 +237,11 @@ uv run hub init --mcp
 ## Commands cheat sheet
 
 ```bash
-uv run hub init --mcp    # one-time setup + MCP registration
-uv run hub up            # start hub + expose on tailnet
-uv run hub up --no-serve # start hub locally only
-uv run hub status        # check if configured and running
+uv run hub init --mcp       # one-time setup: MCP + Tailscale Serve
+uv run hub serve-setup      # retry Tailscale Serve after enabling
+uv run hub up               # start hub + configure serve
+uv run hub up --no-serve    # start hub locally only
+uv run hub status           # check hub + serve state
 ```
 
 ---
@@ -237,15 +255,9 @@ cd hub
 uv sync && uv run hub init --mcp
 ```
 
-Restart Claude Code. Ask your agent to publish a report — Hub handles the rest.
+Approve Tailscale Serve if your browser opens. Restart Claude Code. Done.
 
-**To share with colleagues:**
-
-```bash
-uv run hub up
-```
-
-That's the whole setup.
+If `.ts.net` links fail later: `uv run hub serve-setup`
 
 ---
 

@@ -45,17 +45,20 @@ def detect_owner() -> str:
 def detect_public_url() -> str:
     if url := os.environ.get("HUB_PUBLIC_URL"):
         return url.rstrip("/")
-    if shutil.which("tailscale"):
-        result = _run(["tailscale", "status", "--json"])
-        if result.returncode == 0 and result.stdout.strip():
-            try:
-                data = json.loads(result.stdout)
-                dns = data.get("Self", {}).get("DNSName", "").rstrip(".")
-                if dns:
-                    return f"https://{dns}"
-            except json.JSONDecodeError:
-                pass
-    return "http://127.0.0.1:8080"
+
+    # Default to localhost until Tailscale Serve is actually configured.
+    # setup_tailscale_serve() updates HUB_PUBLIC_URL when serve is active.
+    from hub.tailscale_serve import is_serve_configured, tailscale_machine_url
+
+    if is_serve_configured():
+        machine_url = tailscale_machine_url()
+        if machine_url:
+            return machine_url
+
+    load_config_env()
+    host = os.environ.get("HUB_HOST", "127.0.0.1")
+    port = os.environ.get("HUB_PORT", "8080")
+    return f"http://{host}:{port}"
 
 
 def read_config_file() -> dict[str, str]:
@@ -304,14 +307,13 @@ def write_claude_mcp_config(repo_dir: Path | None = None) -> Path:
 
 
 def start_tailscale_serve() -> str | None:
-    if not shutil.which("tailscale"):
-        return None
+    from hub.tailscale_serve import setup_tailscale_serve
 
-    load_config_env()
-    port = os.environ.get("HUB_PORT", "8080")
-    result = _run(["tailscale", "serve", "--bg", port])
-    if result.returncode != 0:
-        result = _run(["tailscale", "serve", port])
-        if result.returncode != 0:
-            raise RuntimeError(result.stderr.strip() or "tailscale serve failed")
-    return detect_public_url()
+    result = setup_tailscale_serve(wait_seconds=0, open_browser=False)
+    if result.state == "needs_enable":
+        raise RuntimeError(
+            "Tailscale Serve is not enabled. Run `uv run hub serve-setup`."
+        )
+    if result.state == "error":
+        raise RuntimeError(result.message or "tailscale serve failed")
+    return result.public_url

@@ -1,27 +1,41 @@
 # Tailscale setup
 
-Hub binds to `127.0.0.1` and is exposed to your tailnet via Tailscale Serve.
+Hub uses Tailscale Serve to expose your local instance on your tailnet.
 
-## Automatic (recommended)
-
-```bash
-uv run hub up
-```
-
-This starts Hub and runs `tailscale serve` in the background.
-
-## Manual
+## Automatic (built into setup)
 
 ```bash
-uv run hub up --no-serve   # local only
-tailscale serve 8080       # expose separately if needed
+uv run hub init --mcp
 ```
 
-## Identity headers
+This will:
+1. Start Hub on `127.0.0.1:8080`
+2. Configure `tailscale serve`
+3. Open the **one-time** Tailscale Serve enable page if your tailnet hasn't approved it yet
+4. Wait up to 90 seconds for you to approve
+5. Save the correct `HUB_PUBLIC_URL` only when Serve is active
 
-Serve injects `Tailscale-User-Login` on every request. Hub uses this for dashboard auth.
+## If setup finishes before you approve Serve
 
-Set `HUB_PUBLIC_URL` in `~/.config/hub/config.env` (auto-detected during `hub init`) so MCP returns correct share links.
+```bash
+uv run hub serve-setup
+```
+
+Check status anytime:
+
+```bash
+uv run hub status
+```
+
+Look for `serve: active` and a `https://your-machine.tailnet.ts.net` public URL.
+
+## Local only (no Tailscale)
+
+```bash
+uv run hub init --mcp --no-serve
+```
+
+Report links will use `http://127.0.0.1:8080` until Serve is configured.
 
 ## Do not use Funnel
 

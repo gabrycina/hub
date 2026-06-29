@@ -11,9 +11,34 @@ from hub.bootstrap import (
     is_hub_running,
     is_initialized,
     mcp_config,
-    start_tailscale_serve,
     write_claude_mcp_config,
 )
+from hub.tailscale_serve import current_serve_state, setup_tailscale_serve
+
+
+def _print_serve_result(result, *, interactive: bool) -> int:
+    if result.state == "active":
+        print(f"  Tailnet:  {result.public_url}")
+        if result.message:
+            print(f"  Serve:    {result.message}")
+        return 0
+
+    if result.state == "local_only":
+        print(f"  Mode:     local only ({result.public_url})")
+        if result.message:
+            print(f"  Note:     {result.message}")
+        return 0
+
+    print(f"  Mode:     local only ({result.public_url})")
+    print(f"  Serve:    {result.message}")
+    if result.enable_url:
+        print("\nEnable Tailscale Serve (one-time, required for .ts.net links):")
+        print(f"  {result.enable_url}")
+        if interactive:
+            print("\nWe tried to open that link in your browser.")
+            print("After approving, run:")
+            print("  uv run hub serve-setup")
+    return 2 if result.state == "needs_enable" else 1
 
 
 def cmd_init(args: argparse.Namespace) -> int:
@@ -22,7 +47,6 @@ def cmd_init(args: argparse.Namespace) -> int:
     print("Hub initialized.")
     print(f"  Config: ~/.config/hub/config.env")
     print(f"  Owner:  {info['owner']}")
-    print(f"  URL:    {info['public_url']}")
 
     if args.mcp:
         path = write_claude_mcp_config(repo_dir=Path(args.repo).resolve())
@@ -32,7 +56,20 @@ def cmd_init(args: argparse.Namespace) -> int:
         print("\nMCP config (add to Claude Code):")
         print(json.dumps(mcp_config(repo_dir=Path(args.repo).resolve()), indent=2))
 
-    return 0
+    if args.no_serve:
+        print("\nSkipped Tailscale Serve (--no-serve).")
+        print(f"  Local: http://127.0.0.1:8080")
+        return 0
+
+    print("\nSetting up Tailscale Serve...")
+    ensure_hub_running()
+    result = setup_tailscale_serve(
+        wait_seconds=args.serve_wait,
+        open_browser=not args.no_open,
+    )
+    print("Hub is running.")
+    print(f"  Local:    http://127.0.0.1:8080")
+    return _print_serve_result(result, interactive=True)
 
 
 def cmd_up(args: argparse.Namespace) -> int:
@@ -40,21 +77,34 @@ def cmd_up(args: argparse.Namespace) -> int:
         init_config(repo_dir=Path(args.repo).resolve())
 
     ensure_hub_running()
-    public_url = None
-
-    if not args.no_serve:
-        try:
-            public_url = start_tailscale_serve()
-        except RuntimeError as exc:
-            print(f"Warning: {exc}", file=sys.stderr)
-            print("Hub is running locally. Install Tailscale to share on your tailnet.")
 
     print("Hub is running.")
     print(f"  Local:    http://127.0.0.1:8080")
-    if public_url:
-        print(f"  Tailnet:  {public_url}")
-    print("\nLeave this machine awake, or run `hub up` again later.")
-    return 0
+
+    if args.no_serve:
+        print("  Mode:     local only (--no-serve)")
+        return 0
+
+    result = setup_tailscale_serve(
+        wait_seconds=args.serve_wait,
+        open_browser=not args.no_open,
+    )
+    return _print_serve_result(result, interactive=True)
+
+
+def cmd_serve_setup(args: argparse.Namespace) -> int:
+    if not is_initialized():
+        print("Run `uv run hub init --mcp` first.", file=sys.stderr)
+        return 1
+
+    ensure_hub_running()
+    print("Configuring Tailscale Serve...")
+    result = setup_tailscale_serve(
+        wait_seconds=args.serve_wait,
+        open_browser=not args.no_open,
+    )
+    print(f"  Local:    http://127.0.0.1:8080")
+    return _print_serve_result(result, interactive=True)
 
 
 def cmd_status(_: argparse.Namespace) -> int:
@@ -62,6 +112,15 @@ def cmd_status(_: argparse.Namespace) -> int:
     running = is_hub_running() if initialized else False
     print(f"initialized: {initialized}")
     print(f"running:     {running}")
+
+    if not initialized:
+        return 0
+
+    serve = current_serve_state()
+    print(f"serve:       {serve.state}")
+    print(f"public_url:  {serve.public_url}")
+    if serve.enable_url:
+        print(f"enable_url:  {serve.enable_url}")
     return 0
 
 
@@ -80,12 +139,55 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Write MCP config to ~/.claude/.mcp.json",
     )
+    init_parser.add_argument(
+        "--no-serve",
+        action="store_true",
+        help="Skip Tailscale Serve setup (local only)",
+    )
+    init_parser.add_argument(
+        "--no-open",
+        action="store_true",
+        help="Do not open the Tailscale Serve enable URL in a browser",
+    )
+    init_parser.add_argument(
+        "--serve-wait",
+        type=int,
+        default=90,
+        help="Seconds to wait for Tailscale Serve approval (default: 90)",
+    )
 
     up_parser = sub.add_parser("up", help="Start hub and expose on tailnet")
     up_parser.add_argument(
         "--no-serve",
         action="store_true",
         help="Start hub locally without tailscale serve",
+    )
+    up_parser.add_argument(
+        "--no-open",
+        action="store_true",
+        help="Do not open the Tailscale Serve enable URL in a browser",
+    )
+    up_parser.add_argument(
+        "--serve-wait",
+        type=int,
+        default=90,
+        help="Seconds to wait for Tailscale Serve approval (default: 90)",
+    )
+
+    serve_parser = sub.add_parser(
+        "serve-setup",
+        help="Enable and configure Tailscale Serve for Hub",
+    )
+    serve_parser.add_argument(
+        "--no-open",
+        action="store_true",
+        help="Do not open the Tailscale Serve enable URL in a browser",
+    )
+    serve_parser.add_argument(
+        "--serve-wait",
+        type=int,
+        default=90,
+        help="Seconds to wait for Tailscale Serve approval (default: 90)",
     )
 
     sub.add_parser("status", help="Show hub status")
@@ -102,6 +204,8 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_init(args)
     if args.command == "up":
         return cmd_up(args)
+    if args.command == "serve-setup":
+        return cmd_serve_setup(args)
     if args.command == "status":
         return cmd_status(args)
     if args.command == "run":
