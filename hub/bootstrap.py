@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import fcntl
 import json
 import os
 import secrets
@@ -7,11 +8,24 @@ import shutil
 import subprocess
 import sys
 import time
+from contextlib import contextmanager
 from pathlib import Path
 
 import httpx
 
 import hub.paths as paths
+
+HUB_SERVICE_NAME = "hub"
+CONFIG_KEYS = (
+    "HUB_DATA_DIR",
+    "HUB_OWNER",
+    "HUB_API_TOKEN",
+    "HUB_PUBLIC_URL",
+    "HUB_DEV_USER",
+)
+NOT_CONFIGURED_MSG = (
+    "Hub is not configured. Run `uv run hub init --mcp` once, then restart Claude Code."
+)
 
 
 def _run(command: list[str], **kwargs) -> subprocess.CompletedProcess[str]:
@@ -44,14 +58,23 @@ def detect_public_url() -> str:
     return "http://127.0.0.1:8080"
 
 
+def read_config_file() -> dict[str, str]:
+    if not paths.CONFIG_ENV.exists():
+        return {}
+
+    values: dict[str, str] = {}
+    for line in paths.CONFIG_ENV.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        values[key] = value
+    return values
+
+
 def load_config_env() -> None:
-    if paths.CONFIG_ENV.exists():
-        for line in paths.CONFIG_ENV.read_text(encoding="utf-8").splitlines():
-            line = line.strip()
-            if not line or line.startswith("#") or "=" not in line:
-                continue
-            key, value = line.split("=", 1)
-            os.environ.setdefault(key, value)
+    for key, value in read_config_file().items():
+        os.environ.setdefault(key, value)
 
 
 def config_env() -> dict[str, str]:
@@ -61,6 +84,14 @@ def config_env() -> dict[str, str]:
 
 def is_initialized() -> bool:
     return paths.TOKEN_FILE.exists() and paths.CONFIG_ENV.exists()
+
+
+def _write_config_file(values: dict[str, str]) -> None:
+    paths.CONFIG_ENV.write_text(
+        "\n".join(f"{key}={values[key]}" for key in CONFIG_KEYS if key in values) + "\n",
+        encoding="utf-8",
+    )
+    paths.CONFIG_ENV.chmod(0o600)
 
 
 def init_config(*, repo_dir: Path | None = None) -> dict[str, str]:
@@ -74,37 +105,35 @@ def init_config(*, repo_dir: Path | None = None) -> dict[str, str]:
         paths.TOKEN_FILE.write_text(token, encoding="utf-8")
         paths.TOKEN_FILE.chmod(0o600)
 
-    owner = detect_owner()
-    public_url = detect_public_url()
-
-    paths.CONFIG_ENV.write_text(
-        "\n".join(
-            [
-                f"HUB_DATA_DIR={paths.DATA_DIR}",
-                f"HUB_OWNER={owner}",
-                f"HUB_API_TOKEN={token}",
-                f"HUB_PUBLIC_URL={public_url}",
-                f"HUB_DEV_USER={owner}",
-            ]
-        )
-        + "\n",
-        encoding="utf-8",
-    )
-    paths.CONFIG_ENV.chmod(0o600)
-
-    for key, value in {
+    existing = read_config_file()
+    defaults = {
         "HUB_DATA_DIR": str(paths.DATA_DIR),
-        "HUB_OWNER": owner,
+        "HUB_OWNER": detect_owner(),
         "HUB_API_TOKEN": token,
-        "HUB_PUBLIC_URL": public_url,
-        "HUB_DEV_USER": owner,
-    }.items():
-        os.environ[key] = value
+        "HUB_PUBLIC_URL": detect_public_url(),
+        "HUB_DEV_USER": detect_owner(),
+    }
+
+    merged = dict(existing)
+    for key, value in defaults.items():
+        merged.setdefault(key, value)
+
+    merged["HUB_API_TOKEN"] = token
+    merged["HUB_DATA_DIR"] = str(paths.DATA_DIR)
+
+    if merged.get("HUB_DEV_USER") in (None, "") and merged.get("HUB_OWNER"):
+        merged["HUB_DEV_USER"] = merged["HUB_OWNER"]
+
+    _write_config_file(merged)
+
+    for key in CONFIG_KEYS:
+        if key in merged:
+            os.environ[key] = merged[key]
 
     return {
         "token": token,
-        "owner": owner,
-        "public_url": public_url,
+        "owner": merged["HUB_OWNER"],
+        "public_url": merged["HUB_PUBLIC_URL"],
         "repo_dir": str(repo_dir or Path.cwd()),
     }
 
@@ -116,12 +145,59 @@ def hub_health_url() -> str:
     return f"http://{host}:{port}/health"
 
 
+def _health_payload(response: httpx.Response) -> dict | None:
+    if response.status_code != 200:
+        return None
+    try:
+        payload = response.json()
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(payload, dict):
+        return None
+    return payload
+
+
 def is_hub_running() -> bool:
     try:
         response = httpx.get(hub_health_url(), timeout=1.0)
-        return response.status_code == 200
     except httpx.HTTPError:
         return False
+
+    payload = _health_payload(response)
+    if not payload:
+        return False
+    return (
+        payload.get("status") == "ok"
+        and payload.get("service") == HUB_SERVICE_NAME
+    )
+
+
+def _pid_alive(pid: int) -> bool:
+    try:
+        os.kill(pid, 0)
+    except OSError:
+        return False
+    return True
+
+
+def _tail_log(lines: int = 20) -> str:
+    if not paths.LOG_FILE.exists():
+        return ""
+    content = paths.LOG_FILE.read_text(encoding="utf-8", errors="replace").splitlines()
+    if not content:
+        return ""
+    return "\n".join(content[-lines:])
+
+
+@contextmanager
+def _start_lock():
+    paths.CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    with paths.LOCK_FILE.open("w", encoding="utf-8") as lock_file:
+        fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
 
 
 def _hub_process_env() -> dict[str, str]:
@@ -135,34 +211,58 @@ def start_hub_background() -> None:
     if is_hub_running():
         return
 
-    env = _hub_process_env()
-    process = subprocess.Popen(
-        [sys.executable, "-m", "hub.main", "run"],
-        env=env,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        start_new_session=True,
-    )
-    paths.PID_FILE.write_text(str(process.pid), encoding="utf-8")
-
-    for _ in range(20):
+    with _start_lock():
         if is_hub_running():
             return
-        time.sleep(0.25)
 
-    raise RuntimeError("Hub failed to start. Run `hub up` manually to see errors.")
+        if paths.PID_FILE.exists():
+            try:
+                pid = int(paths.PID_FILE.read_text(encoding="utf-8").strip())
+            except ValueError:
+                pid = 0
+            if pid and _pid_alive(pid) and is_hub_running():
+                return
+
+        paths.CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+        log_handle = paths.LOG_FILE.open("a", encoding="utf-8")
+        env = _hub_process_env()
+        process = subprocess.Popen(
+            [sys.executable, "-m", "hub.main", "run"],
+            env=env,
+            stdout=log_handle,
+            stderr=subprocess.STDOUT,
+            start_new_session=True,
+        )
+        paths.PID_FILE.write_text(str(process.pid), encoding="utf-8")
+
+        for _ in range(20):
+            if is_hub_running():
+                return
+            if process.poll() is not None:
+                break
+            time.sleep(0.25)
+
+        log_tail = _tail_log()
+        detail = log_tail or f"Process exited with code {process.returncode}"
+        raise RuntimeError(
+            "Hub failed to start. Run `uv run hub run` to see errors in the foreground.\n"
+            f"Recent log output:\n{detail}"
+        )
 
 
 def ensure_hub_running() -> None:
     load_config_env()
     if not is_initialized():
-        init_config()
+        raise RuntimeError(NOT_CONFIGURED_MSG)
     if not is_hub_running():
         start_hub_background()
 
 
 def mcp_config(repo_dir: Path | None = None) -> dict:
-    info = init_config(repo_dir=repo_dir) if not is_initialized() else _current_info(repo_dir)
+    if not is_initialized():
+        info = init_config(repo_dir=repo_dir)
+    else:
+        info = _current_info(repo_dir)
     return {
         "mcpServers": {
             "hub": {

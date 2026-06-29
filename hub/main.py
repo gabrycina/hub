@@ -29,7 +29,7 @@ def create_app() -> FastAPI:
 
     @app.get("/health")
     def health() -> dict[str, str]:
-        return {"status": "ok"}
+        return {"status": "ok", "service": "hub"}
 
     app.include_router(api.router)
     app.include_router(web.router)

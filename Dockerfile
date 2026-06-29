@@ -12,4 +12,4 @@ ENV HUB_PORT=8080
 ENV HUB_DATA_DIR=/data
 
 EXPOSE 8080
-CMD ["hub"]
+CMD ["hub", "run"]
