@@ -188,13 +188,10 @@ body.dashboard-view {
 }
 
 body.dashboard-view .dashboard-main {
-  min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   padding-top: max(2rem, env(safe-area-inset-top, 0px));
   padding-bottom: max(7.5rem, env(safe-area-inset-bottom, 0px));
-  transform: translateY(-2.5vh);
 }
 
 .dashboard-hero {
@@ -604,7 +601,7 @@ h1 {
   left: 50%;
   bottom: max(20px, env(safe-area-inset-bottom, 20px));
   transform: translateX(-50%);
-  z-index: 10;
+  z-index: 100;
   display: inline-flex;
   align-items: center;
   gap: 2px;
@@ -783,7 +780,7 @@ h1 {
   left: 50%;
   bottom: calc(max(20px, env(safe-area-inset-bottom, 20px)) + 60px);
   transform: translateX(-50%);
-  z-index: 11;
+  z-index: 101;
   padding: 9px 16px;
   border-radius: var(--radius-pill);
   color: rgba(0, 0, 0, 0.84);

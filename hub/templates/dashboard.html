@@ -20,7 +20,9 @@
 <div id="artifact-results">
   {% include "partials/artifact_list.html" %}
 </div>
+{% endblock %}
 
+{% block page_overlay %}
 <nav class="hub-dock liquid-glass" id="hub-dock" aria-label="Hub navigation, search, and filters">
   <input type="hidden" name="scope" id="scope-input" value="{{ scope }}">
 

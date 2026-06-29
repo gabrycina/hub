@@ -133,7 +133,7 @@ class Database:
             params.extend([pattern, pattern, pattern])
 
         where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
-        sql = f"SELECT * FROM artifacts {where} ORDER BY created_at DESC"
+        sql = f"SELECT * FROM artifacts {where} ORDER BY created_at ASC"
 
         with self.connection() as conn:
             rows = conn.execute(sql, params).fetchall()
