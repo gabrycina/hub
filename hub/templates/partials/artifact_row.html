@@ -36,7 +36,7 @@
           type="button"
           class="row-bubble liquid-glass"
           role="menuitem"
-          style="--bubble-x: -6px; --bubble-y: -58px;"
+          style="--bubble-x: 0px; --bubble-y: -42px;"
           onclick="shareReport(this)"
         >
           <svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7a3.27 3.27 0 0 0 0-1.39l7.05-4.11A3 3 0 1 0 13 6.5l-7.05 4.11a3 3 0 1 0 0 4.78l7.05 4.11a3 3 0 1 0 1.08-1.72z" fill="currentColor"/></svg>
@@ -45,7 +45,7 @@
         <a
           class="row-bubble liquid-glass"
           role="menuitem"
-          style="--bubble-x: -34px; --bubble-y: -46px;"
+          style="--bubble-x: 38px; --bubble-y: -24px;"
           href="/a/{{ artifact.id }}/download"
           download
         >
@@ -57,7 +57,7 @@
           type="button"
           class="row-bubble liquid-glass row-bubble-visibility"
           role="menuitem"
-          style="--bubble-x: -54px; --bubble-y: -14px;"
+          style="--bubble-x: 38px; --bubble-y: 24px;"
           hx-post="/a/{{ artifact.id }}/visibility?visibility={% if artifact.visibility.value == 'private' %}shareable{% else %}private{% endif %}"
           hx-target="#artifact-{{ artifact.id }}"
           hx-swap="outerHTML"
@@ -73,7 +73,7 @@
           type="button"
           class="row-bubble liquid-glass row-bubble-danger"
           role="menuitem"
-          style="--bubble-x: -34px; --bubble-y: 30px;"
+          style="--bubble-x: 0px; --bubble-y: 42px;"
           hx-delete="/a/{{ artifact.id }}"
           hx-target="#artifact-{{ artifact.id }}"
           hx-swap="outerHTML swap:0.2s"
