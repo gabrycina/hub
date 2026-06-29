@@ -9,20 +9,21 @@
 <div class="report-shell">
   <iframe
     class="report-frame"
+    id="report-frame"
     src="/a/{{ artifact.id }}/raw"
     sandbox="allow-scripts allow-same-origin"
     title="{{ artifact.title }}"
   ></iframe>
 
-  <nav class="report-dock" role="toolbar" aria-label="Report actions">
-    <button type="button" class="report-dock-btn" id="share-btn" data-url="{{ artifact.url }}">
-      <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7a3.27 3.27 0 0 0 0-1.39l7.05-4.11A3 3 0 1 0 13 6.5l-7.05 4.11a3 3 0 1 0 0 4.78l7.05 4.11a3 3 0 1 0 1.08-1.72z" fill="currentColor"/></svg>
-      <span>Share</span>
+  <nav class="report-dock" id="report-dock" role="toolbar" aria-label="Report actions">
+    <button type="button" class="report-dock-btn" id="share-btn" data-url="{{ artifact.url }}" aria-label="Share report">
+      <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7a3.27 3.27 0 0 0 0-1.39l7.05-4.11A3 3 0 1 0 13 6.5l-7.05 4.11a3 3 0 1 0 0 4.78l7.05 4.11a3 3 0 1 0 1.08-1.72z" fill="currentColor"/></svg>
+      <span class="report-dock-label">Share</span>
     </button>
     <span class="report-dock-sep" aria-hidden="true"></span>
-    <a class="report-dock-btn" href="/a/{{ artifact.id }}/download" download>
-      <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" fill="currentColor"/></svg>
-      <span>Download</span>
+    <a class="report-dock-btn" href="/a/{{ artifact.id }}/download" download aria-label="Download report">
+      <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" fill="currentColor"/></svg>
+      <span class="report-dock-label">Download</span>
     </a>
   </nav>
 
@@ -33,7 +34,9 @@
 (function () {
   const btn = document.getElementById('share-btn');
   const toast = document.getElementById('share-toast');
-  if (!btn) return;
+  const dock = document.getElementById('report-dock');
+  const frame = document.getElementById('report-frame');
+  if (!btn || !dock) return;
 
   function showToast(message) {
     toast.textContent = message;
@@ -62,6 +65,26 @@
       prompt('Copy this link:', url);
     }
   });
+
+  function bindFrameScroll() {
+    if (!frame) return;
+    try {
+      const doc = frame.contentDocument || frame.contentWindow.document;
+      const target = doc.scrollingElement || doc.documentElement;
+      const onScroll = () => {
+        dock.classList.toggle('report-dock--scrolled', target.scrollTop > 40);
+      };
+      target.addEventListener('scroll', onScroll, { passive: true });
+      onScroll();
+    } catch (_) {
+      /* iframe not readable */
+    }
+  }
+
+  if (frame) {
+    frame.addEventListener('load', bindFrameScroll);
+    if (frame.contentDocument?.readyState === 'complete') bindFrameScroll();
+  }
 })();
 </script>
 {% endblock %}
