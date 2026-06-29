@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}{{ artifact.title }} — Hub{% endblock %}
+
+{% block content %}
+<section class="artifact-header">
+  <div>
+    <h1>{{ artifact.title }}</h1>
+    <p class="subtitle">
+      <span class="badge badge-{{ artifact.visibility.value }}">{{ artifact.visibility.value }}</span>
+      <span>{{ artifact.owner }}</span>
+      <span>{{ artifact.updated_at.strftime('%Y-%m-%d %H:%M') }}</span>
+    </p>
+  </div>
+  <div class="artifact-actions">
+    <button type="button" class="btn" onclick="copyLink('{{ artifact.url }}')">Copy link</button>
+    <a class="btn" href="/a/{{ artifact.id }}/download">Download</a>
+    {% if can_manage %}
+    <form method="post" action="/a/{{ artifact.id }}/visibility?visibility={% if artifact.visibility.value == 'private' %}shareable{% else %}private{% endif %}" style="display:inline">
+      <button type="submit" class="btn btn-secondary">
+        Make {% if artifact.visibility.value == 'private' %}shareable{% else %}private{% endif %}
+      </button>
+    </form>
+    {% endif %}
+  </div>
+</section>
+
+<iframe
+  class="artifact-frame"
+  src="/a/{{ artifact.id }}/raw"
+  sandbox="allow-scripts allow-same-origin"
+  title="{{ artifact.title }}"
+></iframe>
+
+<script>
+function copyLink(url) {
+  navigator.clipboard.writeText(url).then(() => {
+    alert('Link copied to clipboard');
+  });
+}
+</script>
+{% endblock %}

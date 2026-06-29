@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Hub — Reports{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div>
+    <h1>Reports</h1>
+    <p class="subtitle">
+      {% if is_hub_owner %}
+      Your personal report inbox on the tailnet.
+      {% else %}
+      Shared reports from {{ settings.owner }}'s hub.
+      {% endif %}
+    </p>
+  </div>
+</section>
+
+<nav class="tabs" aria-label="Report filters">
+  <a href="/?scope=mine{% if query %}&q={{ query }}{% endif %}"
+     class="tab{% if scope == 'mine' %} active{% endif %}">Mine</a>
+  <a href="/?scope=shared{% if query %}&q={{ query }}{% endif %}"
+     class="tab{% if scope == 'shared' %} active{% endif %}">Shared</a>
+  <a href="/?scope=all{% if query %}&q={{ query }}{% endif %}"
+     class="tab{% if scope == 'all' %} active{% endif %}">All</a>
+</nav>
+
+<form class="search-form" method="get" action="/">
+  <input type="hidden" name="scope" value="{{ scope }}">
+  <input type="search" name="q" value="{{ query }}" placeholder="Search title, tags, project…" aria-label="Search reports">
+  <button type="submit">Search</button>
+</form>
+
+{% if artifacts %}
+<table class="artifact-table">
+  <thead>
+    <tr>
+      <th>Title</th>
+      <th>Visibility</th>
+      <th>Tags</th>
+      <th>Updated</th>
+      <th>Size</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody id="artifact-list">
+    {% for artifact in artifacts %}
+    {% include "partials/artifact_row.html" %}
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty-state">
+  <p>No reports yet.</p>
+  <p class="muted">Post one from Claude Code with the <code>hub-publish</code> skill.</p>
+</div>
+{% endif %}
+{% endblock %}

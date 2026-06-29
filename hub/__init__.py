@@ -1,0 +1,1 @@
+"""Hub — self-hosted report inbox for AI coding agents."""

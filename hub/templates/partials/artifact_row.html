@@ -1,0 +1,48 @@
+<tr id="artifact-{{ artifact.id }}">
+  <td>
+    <a href="/a/{{ artifact.id }}" class="artifact-title">{{ artifact.title }}</a>
+    {% if artifact.project %}
+    <div class="muted">{{ artifact.project }}</div>
+    {% endif %}
+  </td>
+  <td><span class="badge badge-{{ artifact.visibility.value }}">{{ artifact.visibility.value }}</span></td>
+  <td>
+    {% if artifact.tags %}
+    <div class="tag-list">
+      {% for tag in artifact.tags %}
+      <span class="tag">{{ tag }}</span>
+      {% endfor %}
+    </div>
+    {% else %}
+    <span class="muted">—</span>
+    {% endif %}
+  </td>
+  <td>{{ artifact.updated_at.strftime('%Y-%m-%d') }}</td>
+  <td>{{ artifact.size_bytes | format_bytes }}</td>
+  <td class="row-actions">
+    <button type="button" class="btn btn-small" onclick="copyLink('{{ artifact.url }}')">Copy</button>
+    <a class="btn btn-small" href="/a/{{ artifact.id }}">Open</a>
+    {% if can_manage %}
+    <button
+      class="btn btn-small btn-secondary"
+      hx-post="/a/{{ artifact.id }}/visibility?visibility={% if artifact.visibility.value == 'private' %}shareable{% else %}private{% endif %}"
+      hx-target="#artifact-{{ artifact.id }}"
+      hx-swap="outerHTML"
+    >{% if artifact.visibility.value == 'private' %}Share{% else %}Private{% endif %}</button>
+    <button
+      class="btn btn-small btn-danger"
+      hx-delete="/a/{{ artifact.id }}"
+      hx-target="#artifact-{{ artifact.id }}"
+      hx-swap="outerHTML swap:0.2s"
+      hx-confirm="Delete this report?"
+    >Delete</button>
+    {% endif %}
+  </td>
+</tr>
+<script>
+if (typeof copyLink !== 'function') {
+  function copyLink(url) {
+    navigator.clipboard.writeText(url);
+  }
+}
+</script>
