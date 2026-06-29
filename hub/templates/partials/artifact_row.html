@@ -4,6 +4,9 @@
     <span class="file-title">{{ artifact.title }}</span>
   </a>
   <div class="file-meta col-meta">
+    {# In server (trust_network) mode the VPN is the boundary, so the
+       private/shareable distinction is meaningless — hide the badge entirely. #}
+    {% if not settings.trust_network %}
     {% if can_manage %}
     <button
       type="button"
@@ -15,6 +18,7 @@
     >{{ artifact.visibility.value }}</button>
     {% else %}
     <span class="badge badge-{{ artifact.visibility.value }}">{{ artifact.visibility.value }}</span>
+    {% endif %}
     {% endif %}
     {% if artifact.tags %}
     <span class="file-tags">{{ artifact.tags | join(', ') }}</span>
@@ -53,6 +57,7 @@
           <span class="row-bubble-tip" role="tooltip">Save report as an HTML file</span>
         </a>
         {% if can_manage %}
+        {% if not settings.trust_network %}
         <button
           type="button"
           class="row-bubble liquid-glass row-bubble-visibility"
@@ -69,6 +74,7 @@
           {% endif %}
           <span class="row-bubble-tip" role="tooltip">{% if artifact.visibility.value == 'private' %}Make shareable on tailnet{% else %}Make private{% endif %}</span>
         </button>
+        {% endif %}
         <button
           type="button"
           class="row-bubble liquid-glass row-bubble-danger"

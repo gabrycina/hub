@@ -9,7 +9,9 @@
 <section class="dashboard-hero">
   <h1>{{ settings.brand_name }}</h1>
   <p class="subtitle">
-    {% if is_hub_owner %}
+    {% if settings.trust_network %}
+    A shared report inbox. Anyone on the network can read and publish.
+    {% elif is_hub_owner %}
     Your personal report inbox — share reports securely over Tailscale when you want to.
     {% else %}
     Shared reports from {{ hub_owner }}'s hub.
@@ -37,6 +39,8 @@
     <span class="hub-dock-label">Hub.</span>
   </a>
 
+  {# Scope tabs split by owner/visibility, which is meaningless in server mode. #}
+  {% if not settings.trust_network %}
   <span class="hub-dock-sep" aria-hidden="true"></span>
 
   <button type="button" class="hub-dock-btn hub-filter{% if scope == 'mine' %} active{% endif %}" data-scope="mine" aria-label="Mine">
@@ -51,6 +55,7 @@
     <svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z" fill="currentColor"/></svg>
     <span class="hub-dock-label">All</span>
   </button>
+  {% endif %}
 
   <span class="hub-dock-sep" aria-hidden="true"></span>
 
