@@ -24,19 +24,34 @@ CONFIG_KEYS = (
     "HUB_DEV_USER",
 )
 NOT_CONFIGURED_MSG = (
-    "Hub is not configured. Run `uv run hub init --mcp` once, then restart Claude Code."
+    "Hub is not configured. Run `uv run hub init --mcp` once, then restart your agent."
 )
 
 
-def _run(command: list[str], **kwargs) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(command, check=False, text=True, capture_output=True, **kwargs)
+def _run(
+    command: list[str],
+    *,
+    timeout: float | None = None,
+    **kwargs,
+) -> subprocess.CompletedProcess[str]:
+    try:
+        return subprocess.run(
+            command,
+            check=False,
+            text=True,
+            capture_output=True,
+            timeout=timeout,
+            **kwargs,
+        )
+    except subprocess.TimeoutExpired:
+        return subprocess.CompletedProcess(command, returncode=124, stdout="", stderr="timeout")
 
 
 def detect_owner() -> str:
     if owner := os.environ.get("HUB_OWNER"):
         return owner
     if shutil.which("tailscale"):
-        result = _run(["tailscale", "whoami"])
+        result = _run(["tailscale", "whoami"], timeout=5)
         if result.returncode == 0 and result.stdout.strip():
             return result.stdout.strip()
     return "local@dev"
@@ -274,7 +289,9 @@ def mcp_config(repo_dir: Path | None = None) -> dict:
                     "--directory",
                     info["repo_dir"],
                     "run",
-                    "hub-mcp",
+                    "python",
+                    "-m",
+                    "hub_mcp.server",
                 ],
             }
         }
@@ -304,6 +321,9 @@ def write_claude_mcp_config(repo_dir: Path | None = None) -> Path:
         paths.CLAUDE_MCP.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
 
     return paths.CLAUDE_MCP
+
+
+
 
 
 def start_tailscale_serve() -> str | None:

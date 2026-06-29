@@ -22,7 +22,7 @@ def _api_token() -> str:
     token = os.environ.get("HUB_API_TOKEN", "")
     if not token:
         raise RuntimeError(
-            "Hub is not configured. Run `uv run hub init --mcp` once, then restart Claude Code."
+            "Hub is not configured. Run `uv run hub init --mcp` once, then restart your agent."
         )
     return token
 

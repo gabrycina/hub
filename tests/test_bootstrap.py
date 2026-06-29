@@ -79,7 +79,7 @@ def test_mcp_config_has_no_env_vars(tmp_path: Path, monkeypatch):
 
     server = config["mcpServers"]["hub"]
     assert "env" not in server
-    assert server["args"][-1] == "hub-mcp"
+    assert server["args"][-1] == "hub_mcp.server"
 
 
 def test_ensure_hub_running_requires_init(tmp_path: Path, monkeypatch):

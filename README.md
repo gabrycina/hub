@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/icon.jpg" alt="Hub" width="128">
+</p>
+
 # Hub
 
 **Your personal report inbox.** Publish HTML reports from Claude Code, browse them on a dashboard, and share with colleagues on your Tailnet.
@@ -63,13 +67,13 @@ uv run hub init --mcp
 
 This automatically:
 - Creates `~/.config/hub/` (token, config, data)
-- Writes the MCP entry to `~/.claude/.mcp.json`
+- Registers MCP with detected agents (Claude Code, Cursor, Grok Build, Codex)
 - Starts Hub
 - Sets up **Tailscale Serve** (opens the one-time enable link if needed)
 
 **If a browser opens:** the user must approve Tailscale Serve on their tailnet (one-time). Hub waits up to 90 seconds, then prints the enable URL if still pending.
 
-**Tell the user:** "Restart Claude Code so the Hub MCP server loads."
+**Tell the user:** restart whichever agents were configured (e.g. Grok Build, Codex, Claude Code).
 
 If Serve wasn't enabled in time:
 
@@ -90,13 +94,18 @@ cp /path/to/hub/skills/hub-publish/template.html .claude/skills/hub-publish/
 Or for a global skill (all projects):
 
 ```bash
+# Grok Build
+mkdir -p ~/.grok/skills/hub-publish
+cp /path/to/hub/skills/hub-publish/* ~/.grok/skills/hub-publish/
+
+# Claude Code (Grok also reads this path)
 mkdir -p ~/.claude/skills/hub-publish
 cp /path/to/hub/skills/hub-publish/* ~/.claude/skills/hub-publish/
 ```
 
 ### Step 4 — Verify
 
-After the user restarts Claude Code, confirm MCP tools are available. You should see:
+After the user restarts their agent, confirm MCP tools are available. You should see:
 
 - `post_report`
 - `list_reports`

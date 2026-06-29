@@ -11,8 +11,8 @@ from hub.bootstrap import (
     is_hub_running,
     is_initialized,
     mcp_config,
-    write_claude_mcp_config,
 )
+from hub.mcp_agents import agent_restart_message, configure_mcp_agents, manual_mcp_snippet
 from hub.tailscale_serve import current_serve_state, setup_tailscale_serve
 
 
@@ -31,11 +31,15 @@ def _print_serve_result(result, *, interactive: bool) -> int:
 
     print(f"  Mode:     local only ({result.public_url})")
     print(f"  Serve:    {result.message}")
-    if result.enable_url:
+    if result.state == "needs_enable":
         print("\nEnable Tailscale Serve (one-time, required for .ts.net links):")
-        print(f"  {result.enable_url}")
+        if result.enable_url:
+            print(f"  {result.enable_url}")
+            if interactive:
+                print("\nWe tried to open that link in your browser.")
+        else:
+            print("  Open the enable link from: tailscale serve --bg 8080")
         if interactive:
-            print("\nWe tried to open that link in your browser.")
             print("After approving, run:")
             print("  uv run hub serve-setup")
     return 2 if result.state == "needs_enable" else 1
@@ -49,11 +53,16 @@ def cmd_init(args: argparse.Namespace) -> int:
     print(f"  Owner:  {info['owner']}")
 
     if args.mcp:
-        path = write_claude_mcp_config(repo_dir=Path(args.repo).resolve())
-        print(f"\nMCP config written to {path}")
-        print("Restart Claude Code to load the Hub MCP server.")
+        repo = Path(args.repo).resolve()
+        agents = configure_mcp_agents(repo_dir=repo)
+        print()
+        for name, path in agents:
+            print(f"MCP config written for {name}: {path}")
+        print(agent_restart_message(agents))
+        print()
+        print(manual_mcp_snippet(repo_dir=repo))
     else:
-        print("\nMCP config (add to Claude Code):")
+        print("\nMCP config (add to your agent):")
         print(json.dumps(mcp_config(repo_dir=Path(args.repo).resolve()), indent=2))
 
     if args.no_serve:

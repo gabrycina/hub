@@ -22,11 +22,11 @@ class ServeSetupResult:
     message: str = ""
 
 
-def tailscale_machine_url() -> str | None:
+def _tailscale_self() -> dict | None:
     if not shutil.which("tailscale"):
         return None
 
-    result = _run(["tailscale", "status", "--json"])
+    result = _run(["tailscale", "status", "--json"], timeout=5)
     if result.returncode != 0 or not result.stdout.strip():
         return None
 
@@ -34,13 +34,34 @@ def tailscale_machine_url() -> str | None:
         import json
 
         data = json.loads(result.stdout)
-        dns = data.get("Self", {}).get("DNSName", "").rstrip(".")
     except json.JSONDecodeError:
         return None
 
+    self = data.get("Self")
+    return self if isinstance(self, dict) else None
+
+
+def tailscale_machine_url() -> str | None:
+    self = _tailscale_self()
+    if not self:
+        return None
+
+    dns = self.get("DNSName", "").rstrip(".")
     if not dns:
         return None
     return f"https://{dns}"
+
+
+def tailscale_enable_url() -> str | None:
+    """Build the one-time Serve approval URL from this machine's tailnet node ID."""
+    self = _tailscale_self()
+    if not self:
+        return None
+
+    node_id = self.get("ID", "").strip()
+    if not node_id:
+        return None
+    return f"https://login.tailscale.com/f/serve?node={node_id}"
 
 
 def parse_enable_url(output: str) -> str | None:
@@ -48,10 +69,14 @@ def parse_enable_url(output: str) -> str | None:
     return match.group(0) if match else None
 
 
+def resolve_enable_url(output: str = "") -> str | None:
+    return parse_enable_url(output) or tailscale_enable_url()
+
+
 def serve_status_output() -> str:
     if not shutil.which("tailscale"):
         return ""
-    result = _run(["tailscale", "serve", "status"])
+    result = _run(["tailscale", "serve", "status"], timeout=5)
     return (result.stdout + result.stderr).strip()
 
 
@@ -92,11 +117,9 @@ def _try_open_enable_url(enable_url: str) -> None:
         subprocess.run(["xdg-open", enable_url], check=False)
 
 
-def _attempt_serve(port: str) -> subprocess.CompletedProcess[str]:
-    result = _run(["tailscale", "serve", "--bg", port])
-    if result.returncode != 0:
-        return _run(["tailscale", "serve", port])
-    return result
+def _attempt_serve(port: str, *, timeout: float = 5.0) -> subprocess.CompletedProcess[str]:
+    # Never run foreground `tailscale serve` — it blocks until interrupted.
+    return _run(["tailscale", "serve", "--bg", port], timeout=timeout)
 
 
 def _serve_output_needs_enable(output: str) -> bool:
@@ -141,7 +164,7 @@ def setup_tailscale_serve(
             message="Tailscale Serve configured.",
         )
 
-    enable_url = parse_enable_url(combined)
+    enable_url = resolve_enable_url(combined)
     if enable_url and open_browser:
         _try_open_enable_url(enable_url)
 
@@ -166,7 +189,7 @@ def setup_tailscale_serve(
                 public_url=public,
                 message="Tailscale Serve configured.",
             )
-        enable_url = enable_url or parse_enable_url(retry_output)
+        enable_url = enable_url or resolve_enable_url(retry_output)
 
     local = _local_public_url()
     update_public_url(local)
@@ -190,22 +213,11 @@ def current_serve_state() -> ServeSetupResult:
         public = tailscale_machine_url() or _local_public_url()
         return ServeSetupResult(state="active", public_url=public)
 
-    probe = _attempt_serve(os.environ.get("HUB_PORT", "8080"))
-    combined = f"{probe.stdout}\n{probe.stderr}"
-    if _serve_output_needs_enable(combined):
-        return ServeSetupResult(
-            state="needs_enable",
-            public_url=_local_public_url(),
-            enable_url=parse_enable_url(combined),
-            message="Tailscale Serve must be enabled on your tailnet.",
-        )
-
-    if probe.returncode == 0:
-        public = tailscale_machine_url() or _local_public_url()
-        return ServeSetupResult(state="active", public_url=public)
-
+    load_config_env()
+    public = os.environ.get("HUB_PUBLIC_URL", _local_public_url())
     return ServeSetupResult(
-        state="error",
-        public_url=_local_public_url(),
-        message=probe.stderr.strip() or "Tailscale Serve setup failed.",
+        state="needs_enable",
+        public_url=public,
+        enable_url=tailscale_enable_url(),
+        message="Tailscale Serve is not configured. Run `uv run hub serve-setup`.",
     )
