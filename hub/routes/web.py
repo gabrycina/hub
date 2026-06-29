@@ -214,6 +214,7 @@ def toggle_visibility(
     assert updated is not None
     artifact = to_artifact(updated, settings.public_url)
 
+    hub_owner = resolved_owner(settings, auth)
     return templates.TemplateResponse(
         request,
         "partials/artifact_row.html",
@@ -221,6 +222,8 @@ def toggle_visibility(
             "artifact": artifact,
             "auth": auth,
             "settings": settings,
+            "hub_owner": hub_owner,
+            "is_hub_owner": auth.user == hub_owner,
             "can_manage": True,
         },
     )

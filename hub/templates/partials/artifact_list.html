@@ -8,7 +8,7 @@
     <span class="col-actions"></span>
   </div>
   {% for artifact in artifacts %}
-  {% set can_manage = auth.user == artifact.owner %}
+  {% set can_manage = is_hub_owner or auth.user == artifact.owner %}
   {% include "partials/artifact_row.html" %}
   {% endfor %}
 </div>

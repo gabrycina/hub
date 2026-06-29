@@ -4,12 +4,10 @@
     <span class="file-title">{{ artifact.title }}</span>
   </a>
   <div class="file-meta col-meta">
-    {% if artifact.project %}<span>{{ artifact.project }}</span>{% endif %}
+    {% if artifact.project %}<span class="file-project">{{ artifact.project }}</span>{% endif %}
     <span class="badge badge-{{ artifact.visibility.value }}">{{ artifact.visibility.value }}</span>
     {% if artifact.tags %}
-    {% for tag in artifact.tags %}
-    <span class="tag">{{ tag }}</span>
-    {% endfor %}
+    <span class="file-tags">{{ artifact.tags | join(', ') }}</span>
     {% endif %}
   </div>
   <time class="col-date" datetime="{{ artifact.updated_at.isoformat() }}">{{ artifact.updated_at.strftime('%b %d, %Y') }}</time>
@@ -48,6 +46,9 @@
     >
       <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="currentColor"/></svg>
     </button>
+    {% else %}
+    <span class="icon-btn icon-btn-spacer" aria-hidden="true"></span>
+    <span class="icon-btn icon-btn-spacer" aria-hidden="true"></span>
     {% endif %}
   </div>
 </div>

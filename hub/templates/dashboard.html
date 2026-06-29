@@ -86,14 +86,20 @@ async function shareReport(btn) {
   const searchInput = document.getElementById('search-input');
   if (!scopeInput || !searchInput) return;
 
-  function refreshReports() {
+  async function refreshReports() {
     const params = new URLSearchParams({ scope: scopeInput.value });
     const q = searchInput.value.trim();
     if (q) params.set('q', q);
-    htmx.ajax('GET', '/partials/reports?' + params.toString(), {
-      target: '#artifact-results',
-      swap: 'innerHTML',
-    });
+    const target = document.getElementById('artifact-results');
+    if (!target) return;
+    try {
+      const res = await fetch('/partials/reports?' + params.toString(), {
+        headers: { Accept: 'text/html' },
+      });
+      if (!res.ok) return;
+      target.innerHTML = await res.text();
+      if (typeof htmx !== 'undefined') htmx.process(target);
+    } catch (_) { /* ignore */ }
   }
 
   let searchTimer;
