@@ -2,8 +2,6 @@
   <img src="docs/icon.png" alt="Hub" width="96" height="96">
 </p>
 
-# Hub
-
 **Your personal report inbox.** Publish HTML reports from Claude Code, browse them on a dashboard, and share with colleagues on your Tailnet.
 
 ---
