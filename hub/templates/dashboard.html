@@ -1,58 +1,63 @@
 {% extends "base.html" %}
 
 {% block title %}Hub — Reports{% endblock %}
+{% block body_class %}dashboard-view{% endblock %}
 
 {% block content %}
-<section class="page-header">
-  <div>
-    <h1>Reports</h1>
-    <p class="subtitle">
-      {% if is_hub_owner %}
-      Your personal report inbox on the tailnet.
-      {% else %}
-      Shared reports from {{ settings.owner }}'s hub.
-      {% endif %}
-    </p>
-  </div>
+<section class="dashboard-hero">
+  <h1>Reports</h1>
+  <p class="subtitle">
+    {% if is_hub_owner %}
+    Your personal report inbox on the tailnet.
+    {% else %}
+    Shared reports from {{ settings.owner }}'s hub.
+    {% endif %}
+  </p>
 </section>
 
-<nav class="tabs" aria-label="Report filters">
-  <a href="/?scope=mine{% if query %}&q={{ query }}{% endif %}"
-     class="tab{% if scope == 'mine' %} active{% endif %}">Mine</a>
-  <a href="/?scope=shared{% if query %}&q={{ query }}{% endif %}"
-     class="tab{% if scope == 'shared' %} active{% endif %}">Shared</a>
-  <a href="/?scope=all{% if query %}&q={{ query }}{% endif %}"
-     class="tab{% if scope == 'all' %} active{% endif %}">All</a>
-</nav>
+<div class="dashboard-toolbar">
+  <nav class="segmented-control" aria-label="Report filters">
+    <a href="/?scope=mine{% if query %}&q={{ query }}{% endif %}"
+       class="segment{% if scope == 'mine' %} active{% endif %}">Mine</a>
+    <a href="/?scope=shared{% if query %}&q={{ query }}{% endif %}"
+       class="segment{% if scope == 'shared' %} active{% endif %}">Shared</a>
+    <a href="/?scope=all{% if query %}&q={{ query }}{% endif %}"
+       class="segment{% if scope == 'all' %} active{% endif %}">All</a>
+  </nav>
 
-<form class="search-form" method="get" action="/">
-  <input type="hidden" name="scope" value="{{ scope }}">
-  <input type="search" name="q" value="{{ query }}" placeholder="Search title, tags, project…" aria-label="Search reports">
-  <button type="submit">Search</button>
-</form>
+  <form class="search-field" method="get" action="/">
+    <input type="hidden" name="scope" value="{{ scope }}">
+    <span class="search-icon" aria-hidden="true">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </span>
+    <input type="search" name="q" value="{{ query }}" placeholder="Search title, tags, project…" aria-label="Search reports">
+    {% if query %}
+    <a href="/?scope={{ scope }}" class="search-clear" aria-label="Clear search">&times;</a>
+    {% endif %}
+  </form>
+</div>
 
 {% if artifacts %}
-<table class="artifact-table">
-  <thead>
-    <tr>
-      <th>Title</th>
-      <th>Visibility</th>
-      <th>Tags</th>
-      <th>Updated</th>
-      <th>Size</th>
-      <th></th>
-    </tr>
-  </thead>
-  <tbody id="artifact-list">
-    {% for artifact in artifacts %}
-    {% include "partials/artifact_row.html" %}
-    {% endfor %}
-  </tbody>
-</table>
+<div id="artifact-list" class="artifact-grid">
+  {% for artifact in artifacts %}
+  {% include "partials/artifact_row.html" %}
+  {% endfor %}
+</div>
 {% else %}
 <div class="empty-state">
-  <p>No reports yet.</p>
-  <p class="muted">Post one from Claude Code with the <code>hub-publish</code> skill.</p>
+  <div class="empty-state-icon" aria-hidden="true">
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="16" height="16" rx="3" stroke="currentColor" stroke-width="1.5"/><path d="M8 9h8M8 13h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+  </div>
+  <p class="empty-state-title">No reports yet</p>
+  <p class="empty-state-desc">Post one from your AI agent with the <code>hub-publish</code> skill.</p>
 </div>
 {% endif %}
+
+<script>
+if (typeof copyLink !== 'function') {
+  function copyLink(url) {
+    navigator.clipboard.writeText(url).catch(() => prompt('Copy this link:', url));
+  }
+}
+</script>
 {% endblock %}

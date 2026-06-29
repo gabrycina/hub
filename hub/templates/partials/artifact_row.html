@@ -1,48 +1,58 @@
-<tr id="artifact-{{ artifact.id }}">
-  <td>
-    <a href="/a/{{ artifact.id }}" class="artifact-title">{{ artifact.title }}</a>
+<article id="artifact-{{ artifact.id }}" class="artifact-card">
+  <a href="/a/{{ artifact.id }}" class="artifact-card-main">
+    <h2 class="artifact-title">{{ artifact.title }}</h2>
     {% if artifact.project %}
-    <div class="muted">{{ artifact.project }}</div>
+    <p class="artifact-project">{{ artifact.project }}</p>
     {% endif %}
-  </td>
-  <td><span class="badge badge-{{ artifact.visibility.value }}">{{ artifact.visibility.value }}</span></td>
-  <td>
-    {% if artifact.tags %}
-    <div class="tag-list">
-      {% for tag in artifact.tags %}
-      <span class="tag">{{ tag }}</span>
-      {% endfor %}
-    </div>
-    {% else %}
-    <span class="muted">—</span>
-    {% endif %}
-  </td>
-  <td>{{ artifact.updated_at.strftime('%Y-%m-%d') }}</td>
-  <td>{{ artifact.size_bytes | format_bytes }}</td>
-  <td class="row-actions">
-    <button type="button" class="btn btn-small" onclick="copyLink('{{ artifact.url }}')">Copy</button>
-    <a class="btn btn-small" href="/a/{{ artifact.id }}">Open</a>
+  </a>
+
+  <div class="artifact-card-meta">
+    <span class="badge badge-{{ artifact.visibility.value }}">{{ artifact.visibility.value }}</span>
+    <span class="meta-sep" aria-hidden="true"></span>
+    <time datetime="{{ artifact.updated_at.isoformat() }}">{{ artifact.updated_at.strftime('%b %d, %Y') }}</time>
+    <span class="meta-sep" aria-hidden="true"></span>
+    <span>{{ artifact.size_bytes | format_bytes }}</span>
+  </div>
+
+  {% if artifact.tags %}
+  <div class="tag-list">
+    {% for tag in artifact.tags %}
+    <span class="tag">{{ tag }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="artifact-card-actions">
+    <button type="button" class="glass-btn" onclick="copyLink('{{ artifact.url }}')" aria-label="Copy link">
+      <svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" fill="currentColor"/></svg>
+      <span>Copy</span>
+    </button>
+    <a class="glass-btn" href="/a/{{ artifact.id }}" aria-label="Open report">
+      <svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 19H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z" fill="currentColor"/></svg>
+      <span>Open</span>
+    </a>
     {% if can_manage %}
     <button
-      class="btn btn-small btn-secondary"
+      class="glass-btn"
       hx-post="/a/{{ artifact.id }}/visibility?visibility={% if artifact.visibility.value == 'private' %}shareable{% else %}private{% endif %}"
       hx-target="#artifact-{{ artifact.id }}"
       hx-swap="outerHTML"
-    >{% if artifact.visibility.value == 'private' %}Share{% else %}Private{% endif %}</button>
+      aria-label="{% if artifact.visibility.value == 'private' %}Make shareable{% else %}Make private{% endif %}"
+    >
+      <svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7a3.27 3.27 0 0 0 0-1.39l7.05-4.11A3 3 0 1 0 13 6.5l-7.05 4.11a3 3 0 1 0 0 4.78l7.05 4.11a3 3 0 1 0 1.08-1.72z" fill="currentColor"/></svg>
+      <span>{% if artifact.visibility.value == 'private' %}Share{% else %}Private{% endif %}</span>
+    </button>
     <button
-      class="btn btn-small btn-danger"
+      class="glass-btn glass-btn-danger"
       hx-delete="/a/{{ artifact.id }}"
       hx-target="#artifact-{{ artifact.id }}"
       hx-swap="outerHTML swap:0.2s"
       hx-confirm="Delete this report?"
-    >Delete</button>
+      aria-label="Delete report"
+    >
+      <svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="currentColor"/></svg>
+      <span>Delete</span>
+    </button>
     {% endif %}
-  </td>
-</tr>
-<script>
-if (typeof copyLink !== 'function') {
-  function copyLink(url) {
-    navigator.clipboard.writeText(url);
-  }
-}
-</script>
+  </div>
+</article>
