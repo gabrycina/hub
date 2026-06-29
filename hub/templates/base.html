@@ -4,6 +4,23 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}{{ settings.brand_name if settings else "Hub" }}{% endblock %}</title>
+  {% set _brand = settings.brand_name if settings else "Hub" %}
+  {# Open Graph / Twitter tags so report links unfurl into a rich preview when shared. #}
+  {% if artifact %}
+  <meta name="description" content="{{ artifact.title }} — on {{ _brand }}">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="{{ artifact.title }}">
+  <meta property="og:description" content="A report on {{ _brand }}">
+  <meta property="og:url" content="{{ artifact.url }}">
+  <meta property="og:site_name" content="{{ _brand }}">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="{{ artifact.title }}">
+  {% else %}
+  <meta name="description" content="{{ _brand }} — a report inbox for AI agents">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="{{ _brand }}">
+  <meta property="og:site_name" content="{{ _brand }}">
+  {% endif %}
   <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/static/styles.css">
   <script src="https://unpkg.com/htmx.org@2.0.4"></script>
