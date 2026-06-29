@@ -3,8 +3,8 @@
 </p>
 
 <p align="center">
-  Your personal report inbox on the Tailnet.<br>
-  Agents publish HTML. You browse, search, and share — privately.
+  Your personal report inbox.<br>
+  Agents publish HTML. Browse locally — share securely over Tailscale when you want to.
 </p>
 
 ---
@@ -13,13 +13,13 @@
 
 Hub is a tiny self-hosted app that collects HTML reports your AI agents write — architecture notes, data reviews, postmortems, anything worth keeping.
 
-You get a clean dashboard called **Your Hub**, plus shareable links for colleagues on your company Tailnet. Nothing hits the public internet.
+You get a clean dashboard called **Your Hub**. Reports stay private by default; when you want to share, links go to colleagues over your Tailscale network — never the public internet.
 
 ```mermaid
 flowchart LR
   A[You + your agent] -->|writes HTML| B[Hub]
   B --> C[Your Hub dashboard]
-  B -->|shareable link| D[Colleagues on Tailnet]
+  B -->|shareable link| D[Colleagues via Tailscale]
 ```
 
 ---
@@ -43,7 +43,7 @@ That's it. Hub will:
 
 If a browser tab opens, approve Tailscale Serve once — then restart your agent.
 
-**Tailnet links not working?**
+**Sharing links not working?**
 
 ```bash
 uv run hub serve-setup
@@ -65,7 +65,7 @@ Look for `running: true` and `serve: active`.
 |------|-----|
 | Browse your reports | Open **Your Hub** at your local or `.ts.net` URL |
 | Publish a report | Ask your agent: *"Publish this to Hub"* |
-| Share with a colleague | Agent sets visibility to `shareable` — send them the link |
+| Share with a colleague | Agent sets visibility to `shareable` — send them the Tailscale link |
 | Keep something private | Default is `private` — only you see it |
 
 Local dashboard: **http://127.0.0.1:17482**
@@ -148,7 +148,7 @@ You should see: `post_report`, `list_reports`, `set_report_visibility`, `get_rep
 
 ## Publishing a report
 
-1. **Ask visibility** if unclear: `private` (default) or `shareable` (Tailnet colleagues)
+1. **Ask visibility** if unclear: `private` (default) or `shareable` (colleagues on your Tailscale network)
 2. **Generate HTML** from `skills/hub-publish/template.html` — replace `{{title}}`, `{{body}}`, `{{generated_at}}`. Keep CSS inline. For Mermaid, use `<pre class="mermaid">` and escape `&` as `&amp;`.
 3. **Publish:**
 
@@ -162,7 +162,7 @@ post_report(
 )
 ```
 
-4. **Return the `url`** from the response. Remind: Tailnet-only, not public internet.
+4. **Return the `url`** from the response. Remind: shared over Tailscale only — not the public internet.
 
 ## MCP tools
 
