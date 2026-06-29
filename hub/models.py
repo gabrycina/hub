@@ -48,6 +48,9 @@ class CreateArtifactRequest(BaseModel):
 class UpdateArtifactRequest(BaseModel):
     title: str | None = None
     visibility: Visibility | None = None
+    html: str | None = None
+    tags: list[str] | None = None
+    project: str | None = None
 
 
 class ArtifactResponse(BaseModel):

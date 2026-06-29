@@ -69,6 +69,31 @@ def list_reports(scope: str = "all", query: str | None = None) -> str:
     return json.dumps(result, indent=2)
 
 
+def update_report(
+    report_id: str,
+    html: str | None = None,
+    title: str | None = None,
+    visibility: str | None = None,
+    tags: list[str] | None = None,
+    project: str | None = None,
+) -> str:
+    """Edit an existing report in place. Keeps the same id and URL — use this to
+    revise a report instead of publishing a new one. Only the fields you pass change."""
+    payload: dict[str, Any] = {}
+    if html is not None:
+        payload["html"] = html
+    if title is not None:
+        payload["title"] = title
+    if visibility is not None:
+        payload["visibility"] = visibility
+    if tags is not None:
+        payload["tags"] = tags
+    if project is not None:
+        payload["project"] = project
+    result = _request("PATCH", f"/api/artifacts/{report_id}", json=payload)
+    return json.dumps(result, indent=2)
+
+
 def set_report_visibility(report_id: str, visibility: str) -> str:
     """Set a report to private or shareable."""
     result = _request(
@@ -86,6 +111,7 @@ def get_report_url(report_id: str) -> str:
 
 
 mcp.tool(post_report)
+mcp.tool(update_report)
 mcp.tool(list_reports)
 mcp.tool(set_report_visibility)
 mcp.tool(get_report_url)

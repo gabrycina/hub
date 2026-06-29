@@ -26,6 +26,31 @@ def test_create_and_list_artifact(temp_hub, auth_headers):
     assert len(listed.json()) == 1
 
 
+def test_edit_html_in_place_keeps_id(temp_hub, auth_headers):
+    client, _ = temp_hub
+    created = client.post(
+        "/api/artifacts",
+        json={"html": "<h1>v1</h1>", "title": "T", "visibility": "shareable"},
+        headers=auth_headers,
+    )
+    aid = created.json()["id"]
+    size1 = created.json()["size_bytes"]
+
+    patched = client.patch(
+        f"/api/artifacts/{aid}",
+        json={"html": "<h1>v2 with more content</h1>", "title": "T2"},
+        headers=auth_headers,
+    )
+    assert patched.status_code == 200
+    assert patched.json()["id"] == aid  # same id => same URL
+    assert patched.json()["title"] == "T2"
+    assert patched.json()["size_bytes"] != size1
+
+    raw = client.get(f"/a/{aid}/raw", headers=auth_headers)
+    assert "v2 with more content" in raw.text
+    assert ">v1<" not in raw.text
+
+
 def test_private_hidden_from_other_user(temp_hub, auth_headers):
     client, _ = temp_hub
     created = client.post(

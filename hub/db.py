@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import sqlite3
 from contextlib import contextmanager
@@ -145,6 +147,9 @@ class Database:
         *,
         title: str | None = None,
         visibility: Visibility | None = None,
+        tags: list[str] | None = None,
+        project: str | None = None,
+        size_bytes: int | None = None,
     ) -> dict | None:
         existing = self.get(artifact_id)
         if not existing:
@@ -159,6 +164,15 @@ class Database:
         if visibility is not None:
             fields.append("visibility = ?")
             params.append(visibility.value)
+        if tags is not None:
+            fields.append("tags = ?")
+            params.append(json.dumps(tags))
+        if project is not None:
+            fields.append("project = ?")
+            params.append(project)
+        if size_bytes is not None:
+            fields.append("size_bytes = ?")
+            params.append(size_bytes)
 
         if not fields:
             return existing

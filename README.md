@@ -198,10 +198,13 @@ post_report(
 
 | Tool | Use |
 |------|-----|
-| `post_report` | Publish HTML |
+| `post_report` | Publish HTML (new report, new URL) |
+| `update_report` | Edit an existing report in place — same id and URL |
 | `list_reports` | List reports (`scope`: `mine`, `shared`, `all`) |
 | `set_report_visibility` | Toggle `private` / `shareable` |
 | `get_report_url` | Get link for existing report |
+
+To **revise** a report, call `update_report(report_id, html=...)` rather than `post_report` — it keeps the link stable instead of minting a new one.
 
 A local stdio MCP loads config from `~/.config/hub/config.env`; a remote MCP (`--transport http`) runs on the server and needs nothing locally.
 

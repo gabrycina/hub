@@ -106,15 +106,30 @@ def update_artifact(
     auth: AuthContext = Depends(get_auth),
     settings: Settings = Depends(get_settings),
     db: Database = Depends(get_db),
+    storage: ArtifactStorage = Depends(get_storage),
 ) -> ArtifactResponse:
     row = db.get(artifact_id)
     if not row:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
     _require_owner(row, auth)
+
+    # Editing the HTML in place keeps the same id and URL.
+    size_bytes = None
+    if payload.html is not None:
+        if len(payload.html.encode("utf-8")) > settings.max_upload_bytes:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail=f"HTML exceeds {settings.max_upload_bytes} bytes",
+            )
+        size_bytes = storage.write(artifact_id, payload.html)
+
     updated = db.update(
         artifact_id,
         title=payload.title,
         visibility=payload.visibility,
+        tags=payload.tags,
+        project=payload.project,
+        size_bytes=size_bytes,
     )
     assert updated is not None
     return _artifact_response(updated, settings)
