@@ -2,6 +2,8 @@
 
 {% block title %}Hub — Reports{% endblock %}
 {% block body_class %}dashboard-view{% endblock %}
+{% block header %}{% endblock %}
+{% block main_class %}container dashboard-main{% endblock %}
 
 {% block content %}
 <section class="dashboard-hero">
@@ -19,8 +21,21 @@
   {% include "partials/artifact_list.html" %}
 </div>
 
-<nav class="hub-dock liquid-glass" id="hub-dock" aria-label="Search and filters">
+<nav class="hub-dock liquid-glass" id="hub-dock" aria-label="Hub navigation, search, and filters">
   <input type="hidden" name="scope" id="scope-input" value="{{ scope }}">
+
+  <a
+    href="https://github.com/gabrycina/hub"
+    class="hub-dock-brand"
+    target="_blank"
+    rel="noopener noreferrer"
+    aria-label="Hub documentation"
+  >
+    <span class="hub-dock-brand-h" aria-hidden="true">H</span>
+    <img src="/static/logo.png" alt="" class="hub-dock-brand-logo" width="44" height="44">
+  </a>
+
+  <span class="hub-dock-sep" aria-hidden="true"></span>
 
   <button type="button" class="hub-dock-btn hub-filter{% if scope == 'mine' %} active{% endif %}" data-scope="mine" aria-label="Mine">
     <svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" fill="currentColor"/></svg>
