@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PORT="${HUB_PORT:-8080}"
+PORT="${HUB_PORT:-17482}"
 
 if ! command -v tailscale >/dev/null 2>&1; then
   echo "tailscale CLI not found. Install Tailscale first."

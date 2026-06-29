@@ -14,6 +14,7 @@ from pathlib import Path
 import httpx
 
 import hub.paths as paths
+from hub.constants import DEFAULT_HOST, DEFAULT_LOCAL_URL, DEFAULT_PORT
 
 HUB_SERVICE_NAME = "hub"
 CONFIG_KEYS = (
@@ -22,10 +23,27 @@ CONFIG_KEYS = (
     "HUB_API_TOKEN",
     "HUB_PUBLIC_URL",
     "HUB_DEV_USER",
+    "HUB_PORT",
 )
 NOT_CONFIGURED_MSG = (
     "Hub is not configured. Run `uv run hub init --mcp` once, then restart your agent."
 )
+_STALE_LOCAL_URLS = frozenset(
+    {
+        "http://127.0.0.1:8080",
+        "http://localhost:8080",
+    }
+)
+
+
+def _migrate_stale_port(values: dict[str, str]) -> bool:
+    """Upgrade installs that used the old default localhost:8080."""
+    public = values.get("HUB_PUBLIC_URL", "").rstrip("/")
+    if public not in _STALE_LOCAL_URLS:
+        return False
+    values["HUB_PORT"] = str(DEFAULT_PORT)
+    values["HUB_PUBLIC_URL"] = DEFAULT_LOCAL_URL
+    return True
 
 
 def _run(
@@ -89,8 +107,8 @@ def detect_public_url() -> str:
             return machine_url
 
     load_config_env()
-    host = os.environ.get("HUB_HOST", "127.0.0.1")
-    port = os.environ.get("HUB_PORT", "8080")
+    host = os.environ.get("HUB_HOST", DEFAULT_HOST)
+    port = os.environ.get("HUB_PORT", str(DEFAULT_PORT))
     return f"http://{host}:{port}"
 
 
@@ -109,7 +127,10 @@ def read_config_file() -> dict[str, str]:
 
 
 def load_config_env() -> None:
-    for key, value in read_config_file().items():
+    values = read_config_file()
+    if values and _migrate_stale_port(values):
+        _write_config_file(values)
+    for key, value in values.items():
         os.environ.setdefault(key, value)
 
 
@@ -148,6 +169,7 @@ def init_config(*, repo_dir: Path | None = None) -> dict[str, str]:
         "HUB_API_TOKEN": token,
         "HUB_PUBLIC_URL": detect_public_url(),
         "HUB_DEV_USER": detect_owner(),
+        "HUB_PORT": str(DEFAULT_PORT),
     }
 
     merged = dict(existing)
@@ -159,6 +181,8 @@ def init_config(*, repo_dir: Path | None = None) -> dict[str, str]:
 
     if merged.get("HUB_DEV_USER") in (None, "") and merged.get("HUB_OWNER"):
         merged["HUB_DEV_USER"] = merged["HUB_OWNER"]
+
+    _migrate_stale_port(merged)
 
     _write_config_file(merged)
 
@@ -177,7 +201,7 @@ def init_config(*, repo_dir: Path | None = None) -> dict[str, str]:
 def hub_health_url() -> str:
     load_config_env()
     host = os.environ.get("HUB_HOST", "127.0.0.1")
-    port = os.environ.get("HUB_PORT", "8080")
+    port = os.environ.get("HUB_PORT", str(DEFAULT_PORT))
     return f"http://{host}:{port}/health"
 
 
@@ -321,7 +345,7 @@ def _current_info(repo_dir: Path | None = None) -> dict[str, str]:
     return {
         "token": paths.TOKEN_FILE.read_text(encoding="utf-8").strip(),
         "owner": os.environ.get("HUB_OWNER", "local@dev"),
-        "public_url": os.environ.get("HUB_PUBLIC_URL", "http://127.0.0.1:8080"),
+        "public_url": os.environ.get("HUB_PUBLIC_URL", DEFAULT_LOCAL_URL),
         "repo_dir": str(repo_dir or Path.cwd()),
     }
 

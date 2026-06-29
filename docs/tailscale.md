@@ -9,7 +9,7 @@ uv run hub init --mcp
 ```
 
 This will:
-1. Start Hub on `127.0.0.1:8080`
+1. Start Hub on `127.0.0.1:17482` (default port; override with `HUB_PORT`)
 2. Configure `tailscale serve`
 3. Open the **one-time** Tailscale Serve enable page if your tailnet hasn't approved it yet
 4. Wait up to 90 seconds for you to approve
@@ -35,7 +35,7 @@ Look for `serve: active` and a `https://your-machine.tailnet.ts.net` public URL.
 uv run hub init --mcp --no-serve
 ```
 
-Report links will use `http://127.0.0.1:8080` until Serve is configured.
+Report links will use `http://127.0.0.1:17482` until Serve is configured.
 
 ## Do not use Funnel
 

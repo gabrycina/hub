@@ -10,10 +10,21 @@ from hub.bootstrap import (
     init_config,
     is_hub_running,
     is_initialized,
+    load_config_env,
     mcp_config,
 )
+from hub.constants import DEFAULT_HOST, DEFAULT_PORT
 from hub.mcp_agents import agent_restart_message, configure_mcp_agents, manual_mcp_snippet
 from hub.tailscale_serve import current_serve_state, setup_tailscale_serve
+
+
+def _local_url() -> str:
+    import os
+
+    load_config_env()
+    host = os.environ.get("HUB_HOST", DEFAULT_HOST)
+    port = os.environ.get("HUB_PORT", str(DEFAULT_PORT))
+    return f"http://{host}:{port}"
 
 
 def _print_serve_result(result, *, interactive: bool) -> int:
@@ -38,7 +49,7 @@ def _print_serve_result(result, *, interactive: bool) -> int:
             if interactive:
                 print("\nWe tried to open that link in your browser.")
         else:
-            print("  Open the enable link from: tailscale serve --bg 8080")
+            print(f"  Open the enable link from: tailscale serve --bg {DEFAULT_PORT}")
         if interactive:
             print("After approving, run:")
             print("  uv run hub serve-setup")
@@ -67,7 +78,7 @@ def cmd_init(args: argparse.Namespace) -> int:
 
     if args.no_serve:
         print("\nSkipped Tailscale Serve (--no-serve).")
-        print(f"  Local: http://127.0.0.1:8080")
+        print(f"  Local: {_local_url()}")
         return 0
 
     print("\nSetting up Tailscale Serve...")
@@ -77,7 +88,7 @@ def cmd_init(args: argparse.Namespace) -> int:
         open_browser=not args.no_open,
     )
     print("Hub is running.")
-    print(f"  Local:    http://127.0.0.1:8080")
+    print(f"  Local:    {_local_url()}")
     return _print_serve_result(result, interactive=True)
 
 
@@ -88,7 +99,7 @@ def cmd_up(args: argparse.Namespace) -> int:
     ensure_hub_running()
 
     print("Hub is running.")
-    print(f"  Local:    http://127.0.0.1:8080")
+    print(f"  Local:    {_local_url()}")
 
     if args.no_serve:
         print("  Mode:     local only (--no-serve)")
@@ -112,7 +123,7 @@ def cmd_serve_setup(args: argparse.Namespace) -> int:
         wait_seconds=args.serve_wait,
         open_browser=not args.no_open,
     )
-    print(f"  Local:    http://127.0.0.1:8080")
+    print(f"  Local:    {_local_url()}")
     return _print_serve_result(result, interactive=True)
 
 

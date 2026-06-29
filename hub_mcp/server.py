@@ -6,14 +6,15 @@ import httpx
 from fastmcp import FastMCP
 
 from hub.bootstrap import ensure_hub_running, load_config_env
+from hub.constants import DEFAULT_HOST, DEFAULT_PORT
 
 mcp = FastMCP("Hub")
 
 
 def _hub_url() -> str:
     load_config_env()
-    host = os.environ.get("HUB_HOST", "127.0.0.1")
-    port = os.environ.get("HUB_PORT", "8080")
+    host = os.environ.get("HUB_HOST", DEFAULT_HOST)
+    port = os.environ.get("HUB_PORT", str(DEFAULT_PORT))
     return os.environ.get("HUB_URL", f"http://{host}:{port}").rstrip("/")
 
 

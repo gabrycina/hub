@@ -8,8 +8,8 @@ COPY hub_mcp ./hub_mcp
 RUN pip install --no-cache-dir .
 
 ENV HUB_HOST=127.0.0.1
-ENV HUB_PORT=8080
+ENV HUB_PORT=17482
 ENV HUB_DATA_DIR=/data
 
-EXPOSE 8080
+EXPOSE 17482
 CMD ["hub", "run"]

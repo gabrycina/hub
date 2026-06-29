@@ -8,9 +8,11 @@ from hub.bootstrap import (
     ensure_hub_running,
     init_config,
     is_hub_running,
+    load_config_env,
     mcp_config,
     read_config_file,
 )
+from hub.constants import DEFAULT_LOCAL_URL, DEFAULT_PORT
 
 
 def _patch_paths(monkeypatch, tmp_path: Path, config_dir: Path):
@@ -88,6 +90,32 @@ def test_ensure_hub_running_requires_init(tmp_path: Path, monkeypatch):
 
     with pytest.raises(RuntimeError, match=NOT_CONFIGURED_MSG):
         ensure_hub_running()
+
+
+def test_load_config_env_migrates_stale_local_port(tmp_path: Path, monkeypatch):
+    config_dir = tmp_path / "config"
+    _patch_paths(monkeypatch, tmp_path, config_dir)
+    config_dir.mkdir(parents=True)
+    config_dir.joinpath("token").write_text("secret-token", encoding="utf-8")
+    config_dir.joinpath("config.env").write_text(
+        "\n".join(
+            [
+                f"HUB_DATA_DIR={config_dir / 'data'}",
+                "HUB_OWNER=dev@example.com",
+                "HUB_API_TOKEN=secret-token",
+                "HUB_PUBLIC_URL=http://127.0.0.1:8080",
+                "HUB_DEV_USER=dev@example.com",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    load_config_env()
+    saved = read_config_file()
+
+    assert saved["HUB_PORT"] == str(DEFAULT_PORT)
+    assert saved["HUB_PUBLIC_URL"] == DEFAULT_LOCAL_URL
 
 
 def test_is_hub_running_rejects_non_hub_health(monkeypatch):

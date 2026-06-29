@@ -243,6 +243,8 @@ uv run hub init --mcp
 
 ## Commands cheat sheet
 
+Default local URL is `http://127.0.0.1:17482` (uncommon port to avoid dev-server collisions). Override with `HUB_PORT` in `~/.config/hub/config.env`.
+
 ```bash
 uv run hub init --mcp       # one-time setup: MCP + Tailscale Serve
 uv run hub serve-setup      # retry Tailscale Serve after enabling

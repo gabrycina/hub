@@ -3,6 +3,7 @@ from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from hub.constants import DEFAULT_LOCAL_URL, DEFAULT_PORT
 from hub.paths import CONFIG_ENV
 
 
@@ -16,10 +17,10 @@ class Settings(BaseSettings):
 
     data_dir: Path = Path.home() / ".config" / "hub" / "data"
     host: str = "127.0.0.1"
-    port: int = 8080
+    port: int = DEFAULT_PORT
     owner: str = "local@dev"
     api_token: str = ""
-    public_url: str = "http://127.0.0.1:8080"
+    public_url: str = DEFAULT_LOCAL_URL
     dev_user: str = ""
     max_upload_bytes: int = 5 * 1024 * 1024
 

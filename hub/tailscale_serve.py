@@ -10,6 +10,7 @@ from dataclasses import dataclass
 
 import hub.paths as paths
 from hub.bootstrap import _run, load_config_env, read_config_file
+from hub.constants import DEFAULT_PORT
 
 ENABLE_URL_RE = re.compile(r"https://login\.tailscale\.com/f/serve\?node=\S+")
 
@@ -94,7 +95,7 @@ def is_serve_configured() -> bool:
 def _local_public_url() -> str:
     load_config_env()
     host = os.environ.get("HUB_HOST", "127.0.0.1")
-    port = os.environ.get("HUB_PORT", "8080")
+    port = os.environ.get("HUB_PORT", str(DEFAULT_PORT))
     return f"http://{host}:{port}"
 
 
@@ -132,7 +133,7 @@ def setup_tailscale_serve(
     open_browser: bool = True,
 ) -> ServeSetupResult:
     load_config_env()
-    port = os.environ.get("HUB_PORT", "8080")
+    port = os.environ.get("HUB_PORT", str(DEFAULT_PORT))
 
     if not shutil.which("tailscale"):
         local = _local_public_url()
