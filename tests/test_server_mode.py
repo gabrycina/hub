@@ -33,6 +33,17 @@ def test_brand_name_default_and_custom():
     assert Settings(site_name="Gen AI").brand_name == "Gen AI Hub"
 
 
+def test_manage_open_in_trust_network_owner_only_in_local():
+    from hub.routes.web import _can_manage_artifact
+
+    row = {"owner": "alice@x"}
+    server = Settings(trust_network=True)
+    assert _can_manage_artifact(row, None, server) is True  # anyone on the VPN
+
+    local = Settings(trust_network=False, owner="alice@x")
+    assert _can_manage_artifact(row, None, local) is False  # anonymous can't
+
+
 def test_parse_report_id_accepts_id_or_url():
     from hub_mcp.server import _parse_report_id
 

@@ -36,7 +36,15 @@ def _format_bytes(size: int) -> str:
 templates.env.filters["format_bytes"] = _format_bytes
 
 
-def _can_manage_artifact(row: dict, auth: AuthContext, settings: Settings) -> bool:
+def _can_manage_artifact(
+    row: dict, auth: AuthContext | None, settings: Settings
+) -> bool:
+    # Server (trust_network) mode: the network is the boundary — anyone who can
+    # reach the dashboard can manage, mirroring open publishing.
+    if settings.trust_network:
+        return True
+    if auth is None:
+        return False
     hub_owner = resolved_owner(settings, auth)
     return auth.user == hub_owner or auth.user == row["owner"]
 
@@ -145,7 +153,7 @@ def preview_artifact(
             "artifact": artifact,
             "auth": auth,
             "settings": settings,
-            "can_manage": viewer == artifact.owner,
+            "can_manage": settings.trust_network or viewer == artifact.owner,
         },
     )
 
@@ -228,7 +236,7 @@ def toggle_visibility(
     request: Request,
     artifact_id: str,
     visibility: str = Query(..., pattern="^(private|shareable)$"),
-    auth: AuthContext = Depends(get_auth),
+    auth: AuthContext | None = Depends(get_optional_auth),
     settings: Settings = Depends(get_settings),
     db: Database = Depends(get_db),
 ) -> HTMLResponse:
@@ -251,7 +259,7 @@ def toggle_visibility(
             "auth": auth,
             "settings": settings,
             "hub_owner": hub_owner,
-            "is_hub_owner": auth.user == hub_owner,
+            "is_hub_owner": bool(auth and auth.user == hub_owner),
             "can_manage": _can_manage_artifact(updated, auth, settings),
         },
     )
@@ -260,7 +268,7 @@ def toggle_visibility(
 @router.delete("/a/{artifact_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_from_dashboard(
     artifact_id: str,
-    auth: AuthContext = Depends(get_auth),
+    auth: AuthContext | None = Depends(get_optional_auth),
     settings: Settings = Depends(get_settings),
     db: Database = Depends(get_db),
     storage: ArtifactStorage = Depends(get_storage),
