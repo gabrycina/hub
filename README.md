@@ -2,271 +2,89 @@
   <img src="docs/icon.png" alt="Hub" width="96" height="96">
 </p>
 
-**Your personal report inbox.** Publish HTML reports from Claude Code, browse them on a dashboard, and share with colleagues on your Tailnet.
+<h1 align="center">Hub</h1>
+
+<p align="center">
+  Your personal report inbox on the Tailnet.<br>
+  Agents publish HTML. You browse, search, and share — privately.
+</p>
 
 ---
 
-## For agents: start here
+## What is this?
 
-If you're helping a user set up or use Hub, follow this guide step by step. You can run the commands yourself — don't just tell the user what to run.
+Hub is a tiny self-hosted app that collects HTML reports your AI agents write — architecture notes, data reviews, postmortems, anything worth keeping.
 
-### What Hub does
+You get a clean dashboard called **Your Hub**, plus shareable links for colleagues on your company Tailnet. Nothing hits the public internet.
 
-Hub stores HTML reports the agent generates. After publishing, the user gets a link they can open or share with colleagues on the company Tailnet.
-
-```
-You generate HTML  →  MCP post_report  →  user gets a link
-```
-
-### Is Hub already set up?
-
-Run this from the hub repo:
-
-```bash
-uv run hub status
-```
-
-| Output | Meaning | What to do |
-|--------|---------|------------|
-| `initialized: false` | First time | Run setup (below) |
-| `initialized: true`, `running: false` | Configured but not started | Fine — MCP auto-starts it. Or run `uv run hub up` |
-| `initialized: true`, `running: true` | Ready | Skip setup, go publish |
-
-Also check MCP is registered:
-
-```bash
-cat ~/.claude/.mcp.json | grep -q '"hub"' && echo "MCP registered" || echo "MCP missing"
+```mermaid
+flowchart LR
+  A[You + your agent] -->|writes HTML| B[Hub]
+  B --> C[Your Hub dashboard]
+  B -->|shareable link| D[Colleagues on Tailnet]
 ```
 
 ---
 
-## Agent setup guide (one-time)
+## Setup (2 minutes)
 
-Do this when the user wants Hub but it's not set up yet.
-
-### Prerequisites
-
-- **uv** installed (`curl -LsSf https://astral.sh/uv/install.sh | sh`)
-- **Tailscale** connected (for sharing with colleagues — optional for local-only use)
-- **Claude Code** as the agent host
-
-### Step 1 — Install dependencies
+**You need:** [uv](https://docs.astral.sh/uv/), Tailscale connected (for sharing), and an agent host like Claude Code or Grok Build.
 
 ```bash
-cd /path/to/hub
-uv sync
-```
-
-### Step 2 — Initialize Hub, MCP, and Tailscale Serve
-
-```bash
-uv run hub init --mcp
-```
-
-This automatically:
-- Creates `~/.config/hub/` (token, config, data)
-- Registers MCP with detected agents (Claude Code, Cursor, Grok Build, Codex)
-- Starts Hub
-- Sets up **Tailscale Serve** (opens the one-time enable link if needed)
-
-**If a browser opens:** the user must approve Tailscale Serve on their tailnet (one-time). Hub waits up to 90 seconds, then prints the enable URL if still pending.
-
-**Tell the user:** restart whichever agents were configured (e.g. Grok Build, Codex, Claude Code).
-
-If Serve wasn't enabled in time:
-
-```bash
-uv run hub serve-setup
-```
-
-### Step 3 — Install the publish skill (recommended)
-
-Copy the skill into the user's project so you know how to format and publish reports:
-
-```bash
-mkdir -p .claude/skills/hub-publish
-cp /path/to/hub/skills/hub-publish/SKILL.md .claude/skills/hub-publish/
-cp /path/to/hub/skills/hub-publish/template.html .claude/skills/hub-publish/
-```
-
-Or for a global skill (all projects):
-
-```bash
-# Grok Build
-mkdir -p ~/.grok/skills/hub-publish
-cp /path/to/hub/skills/hub-publish/* ~/.grok/skills/hub-publish/
-
-# Claude Code (Grok also reads this path)
-mkdir -p ~/.claude/skills/hub-publish
-cp /path/to/hub/skills/hub-publish/* ~/.claude/skills/hub-publish/
-```
-
-### Step 4 — Verify
-
-After the user restarts their agent, confirm MCP tools are available. You should see:
-
-- `post_report`
-- `list_reports`
-- `set_report_visibility`
-- `get_report_url`
-
-If tools are missing, see [Troubleshooting](#troubleshooting).
-
-### Step 5 — Verify Tailscale Serve
-
-```bash
-uv run hub status
-```
-
-| `serve:` value | Meaning |
-|----------------|---------|
-| `active` | `.ts.net` links work |
-| `needs_enable` | User must open `enable_url` and run `uv run hub serve-setup` |
-| `local_only` | No Tailscale — localhost only |
-
----
-
-## Agent: how to publish a report
-
-Use this whenever the user asks to share an explanation, data review, context doc, or report.
-
-### 1. Ask about visibility (if unclear)
-
-| Visibility | Who can see it |
-|------------|----------------|
-| `private` | Only the owner (default — use for sensitive data) |
-| `shareable` | Anyone on the Tailnet with the link |
-
-### 2. Generate HTML
-
-Use `skills/hub-publish/template.html` as the shell. Replace:
-
-- `{{title}}` — report title
-- `{{body}}` — your content (headings, tables, code, etc.)
-- `{{generated_at}}` — current date/time
-
-Keep CSS inline. Self-contained HTML only.
-
-### 3. Publish via MCP
-
-```
-post_report(
-  html=<full html string>,
-  title="Q2 Metrics Dashboard",
-  visibility="shareable",
-  tags=["metrics", "q2"],
-  project="growth"
-)
-```
-
-### 4. Return the link to the user
-
-The response includes a `url` field. Give them that link and note:
-
-- It's **Tailnet-only** (not public internet)
-- They can browse all reports at their Hub dashboard URL
-- Use `set_report_visibility` to change private ↔ shareable later
-
-### Example message to user
-
-> Published **Q2 Metrics Dashboard** as shareable.
-> Open it here: https://your-mac.your-tailnet.ts.net/a/abc123
-> Colleagues on the Tailnet can view it too. It's not on the public internet.
-
----
-
-## MCP tools reference
-
-| Tool | When to use |
-|------|-------------|
-| `post_report` | Publish a new HTML report |
-| `list_reports` | Find existing reports (`scope`: `mine`, `shared`, `all`) |
-| `set_report_visibility` | Toggle `private` / `shareable` |
-| `get_report_url` | Get the link for an existing report |
-
-No env vars needed in MCP config — everything loads from `~/.config/hub/config.env`.
-
----
-
-## Troubleshooting
-
-**Agent: work through these in order.**
-
-### MCP tools not showing up
-
-1. Check config exists: `ls ~/.config/hub/config.env`
-2. Check MCP registered: `cat ~/.claude/.mcp.json`
-3. Re-run setup: `uv run hub init --mcp`
-4. Ask user to **restart Claude Code**
-
-### `post_report` fails with "not configured"
-
-```bash
-uv run hub init --mcp
-```
-
-Then restart Claude Code.
-
-### `post_report` fails with connection error
-
-Hub isn't running. It should auto-start, but you can start it manually:
-
-```bash
-uv run hub up --no-serve
-```
-
-### Share links don't work / ERR_CONNECTION_REFUSED on .ts.net
-
-Tailscale Serve is not active. Check:
-
-```bash
-uv run hub status
-```
-
-If `serve: needs_enable`, open the `enable_url` and run:
-
-```bash
-uv run hub serve-setup
-```
-
-Also confirm the report visibility is `shareable`, not `private`.
-
-### Wrong URL in response
-
-Re-detect Tailscale URL and re-init:
-
-```bash
-uv run hub init --mcp
-```
-
----
-
-## Commands cheat sheet
-
-Default local URL is `http://127.0.0.1:17482` (uncommon port to avoid dev-server collisions). Override with `HUB_PORT` in `~/.config/hub/config.env`.
-
-```bash
-uv run hub init --mcp       # one-time setup: MCP + Tailscale Serve
-uv run hub serve-setup      # retry Tailscale Serve after enabling
-uv run hub up               # start hub + configure serve
-uv run hub up --no-serve    # start hub locally only
-uv run hub status           # check hub + serve state
-```
-
----
-
-## For humans
-
-**First time:**
-
-```bash
+git clone https://github.com/gabrycina/hub.git
 cd hub
 uv sync && uv run hub init --mcp
 ```
 
-Approve Tailscale Serve if your browser opens. Restart Claude Code. Done.
+That's it. Hub will:
 
-If `.ts.net` links fail later: `uv run hub serve-setup`
+1. Create `~/.config/hub/` (config, token, reports)
+2. Register MCP with your agents
+3. Start the server at **http://127.0.0.1:17482**
+4. Set up **Tailscale Serve** for `.ts.net` links
+
+If a browser tab opens, approve Tailscale Serve once — then restart your agent.
+
+**Tailnet links not working?**
+
+```bash
+uv run hub serve-setup
+```
+
+**Check everything:**
+
+```bash
+uv run hub status
+```
+
+Look for `running: true` and `serve: active`.
+
+---
+
+## Daily use
+
+| What | How |
+|------|-----|
+| Browse your reports | Open **Your Hub** at your local or `.ts.net` URL |
+| Publish a report | Ask your agent: *"Publish this to Hub"* |
+| Share with a colleague | Agent sets visibility to `shareable` — send them the link |
+| Keep something private | Default is `private` — only you see it |
+
+Local dashboard: **http://127.0.0.1:17482**
+
+---
+
+## Commands
+
+```bash
+uv run hub init --mcp       # one-time setup
+uv run hub serve-setup      # retry Tailscale Serve
+uv run hub up               # start + configure serve
+uv run hub up --no-serve    # local only
+uv run hub status           # health check
+```
+
+Port **17482** by default. Override with `HUB_PORT` in `~/.config/hub/config.env`.
 
 ---
 
@@ -276,6 +94,97 @@ If `.ts.net` links fail later: `uv run hub serve-setup`
 - [MCP details](docs/mcp-claude-code.md)
 - [Security model](docs/security.md)
 
-## License
+MIT · [github.com/gabrycina/hub](https://github.com/gabrycina/hub)
 
-MIT
+---
+
+# For agents
+
+If you're setting up or using Hub on behalf of a user, follow this section. **Run commands yourself** — don't just tell the user what to run.
+
+## Quick check
+
+```bash
+uv run hub status
+```
+
+| Output | Action |
+|--------|--------|
+| `initialized: false` | Run setup below |
+| `initialized: true`, `running: false` | MCP auto-starts Hub; or `uv run hub up` |
+| `initialized: true`, `running: true` | Ready — publish |
+
+Verify MCP is registered:
+
+```bash
+grep -q '"hub"' ~/.claude/.mcp.json 2>/dev/null && echo "ok" || echo "missing"
+```
+
+(Grok Build, Cursor, and Codex use their own MCP paths — `hub init --mcp` writes to all detected agents.)
+
+## One-time setup
+
+```bash
+cd /path/to/hub
+uv sync
+uv run hub init --mcp
+```
+
+This creates config, registers MCP, starts Hub, and configures Tailscale Serve. If Serve needs approval, a browser link opens — wait for the user, then `uv run hub serve-setup` if needed.
+
+**Tell the user** to restart their agent after init.
+
+### Install the publish skill (recommended)
+
+```bash
+mkdir -p ~/.grok/skills/hub-publish ~/.claude/skills/hub-publish
+cp skills/hub-publish/* ~/.grok/skills/hub-publish/
+cp skills/hub-publish/* ~/.claude/skills/hub-publish/
+```
+
+Or per-project: `.claude/skills/hub-publish/`
+
+### Verify MCP tools
+
+You should see: `post_report`, `list_reports`, `set_report_visibility`, `get_report_url`
+
+## Publishing a report
+
+1. **Ask visibility** if unclear: `private` (default) or `shareable` (Tailnet colleagues)
+2. **Generate HTML** from `skills/hub-publish/template.html` — replace `{{title}}`, `{{body}}`, `{{generated_at}}`. Keep CSS inline. For Mermaid, use `<pre class="mermaid">` and escape `&` as `&amp;`.
+3. **Publish:**
+
+```
+post_report(
+  html=<full html>,
+  title="Q2 Metrics Dashboard",
+  visibility="shareable",
+  tags=["metrics"],
+  project="growth"
+)
+```
+
+4. **Return the `url`** from the response. Remind: Tailnet-only, not public internet.
+
+## MCP tools
+
+| Tool | Use |
+|------|-----|
+| `post_report` | Publish HTML |
+| `list_reports` | List reports (`scope`: `mine`, `shared`, `all`) |
+| `set_report_visibility` | Toggle `private` / `shareable` |
+| `get_report_url` | Get link for existing report |
+
+No env vars in MCP config — loads from `~/.config/hub/config.env`.
+
+## Troubleshooting
+
+**Tools missing** → `uv run hub init --mcp`, restart agent
+
+**`post_report` connection error** → `uv run hub up --no-serve`
+
+**`.ts.net` link fails** → `uv run hub status`, check `serve: needs_enable`, run `uv run hub serve-setup`
+
+**Wrong URL** → `uv run hub init --mcp` to re-detect Tailscale URL
+
+**Report not visible to colleague** → visibility must be `shareable`, not `private`
