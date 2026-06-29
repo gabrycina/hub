@@ -9,6 +9,7 @@ from hub.config import Settings, get_settings
 from hub.db import Database, to_artifact
 from hub.models import Visibility
 from hub.owner import resolved_owner
+from hub.report_html import enhance_report_html
 from hub.storage import ArtifactStorage
 
 TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "templates"
@@ -155,6 +156,8 @@ def raw_artifact(
     html = storage.read(artifact_id)
     if html is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+
+    html = enhance_report_html(html)
 
     return HTMLResponse(
         content=html,

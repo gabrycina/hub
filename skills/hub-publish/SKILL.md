@@ -21,7 +21,7 @@ Publish rich HTML reports to the user's Hub instance on their Tailnet.
 2. **Generate HTML** using `skills/hub-publish/template.html` as the shell:
    - Replace `{{title}}`, `{{body}}`, `{{generated_at}}`
    - Keep report CSS inline; the template loads Mermaid from CDN for diagrams
-   - **Mermaid diagrams** — use `<pre class="mermaid">`, not markdown fences:
+   - **Mermaid diagrams** — use `<pre class="mermaid">`, not markdown fences. Escape `&` as `&amp;` in node chains (e.g. `A &amp; B`):
      ```html
      <pre class="mermaid">
      flowchart LR

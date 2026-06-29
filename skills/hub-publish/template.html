@@ -130,11 +130,21 @@
   </div>
   <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
   <script>
-    mermaid.initialize({
-      startOnLoad: true,
-      theme: window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "neutral",
-      securityLevel: "loose",
-    });
+    (function () {
+      function runMermaid() {
+        mermaid.initialize({
+          startOnLoad: false,
+          theme: window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "neutral",
+          securityLevel: "loose",
+        });
+        mermaid.run({ querySelector: ".mermaid" }).catch(console.error);
+      }
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", runMermaid);
+      } else {
+        runMermaid();
+      }
+    })();
   </script>
 </body>
 </html>
