@@ -186,6 +186,33 @@ body.dashboard-view {
   --border-strong: rgba(0, 0, 0, 0.12);
   --bg-accent: rgba(120, 120, 128, 0.1);
   background: #ffffff;
+  position: relative;
+  isolation: isolate;
+}
+
+/* Faded, blurred liquid-glass backdrop */
+body.dashboard-view::before {
+  content: "";
+  position: fixed;
+  inset: -8%;
+  z-index: -2;
+  background: url("/static/bg.jpg") center / cover no-repeat;
+  filter: blur(34px) saturate(1.05);
+  opacity: 0.16;
+  transform: scale(1.08);
+  pointer-events: none;
+}
+
+/* Wash it toward white so content stays legible (liquid-glass over frost) */
+body.dashboard-view::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.82) 60%, rgba(255, 255, 255, 0.92)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.88));
+  pointer-events: none;
 }
 
 body.dashboard-view .dashboard-main {
