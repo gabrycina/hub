@@ -37,20 +37,29 @@ class Artifact(BaseModel):
 
 
 class CreateArtifactRequest(BaseModel):
-    html: str
+    # html is substituted into the file tree as "index.html" (root of the artifact tree).
+    # This moves the main page HTML over into the new file tree layout (in the folder that makes sense: root index.html).
+    # Kept for backward compat; prefer providing "index.html" (or other main) inside `files`.
+    html: str | None = None
     title: str
     visibility: Visibility = Visibility.PRIVATE
     tags: list[str] = Field(default_factory=list)
     project: str | None = None
     expires_at: datetime | None = None
+    # files for the report tree: relpath -> base64 content. Main page can be "index.html" here.
+    files: dict[str, str] | None = None
 
 
 class UpdateArtifactRequest(BaseModel):
     title: str | None = None
     visibility: Visibility | None = None
+    # html is substituted into the file tree as "index.html" (moving main page over into tree).
+    # Kept for backward compat.
     html: str | None = None
     tags: list[str] | None = None
     project: str | None = None
+    # files for the report tree (updates/adds to tree)
+    files: dict[str, str] | None = None
 
 
 class ArtifactResponse(BaseModel):

@@ -121,11 +121,12 @@ def test_delete_artifact(temp_hub, auth_headers):
         headers=auth_headers,
     )
     artifact_id = created.json()["id"]
-    assert (data_dir / "artifacts" / f"{artifact_id}.html").exists()
+    # New tree layout: primary lives at artifacts/{id}/index.html
+    assert (data_dir / "artifacts" / artifact_id / "index.html").exists()
 
     deleted = client.delete(f"/api/artifacts/{artifact_id}", headers=auth_headers)
     assert deleted.status_code == 204
-    assert not (data_dir / "artifacts" / f"{artifact_id}.html").exists()
+    assert not (data_dir / "artifacts" / artifact_id / "index.html").exists()
 
 
 def test_raw_artifact_allows_scripts_in_sandbox(temp_hub, auth_headers):

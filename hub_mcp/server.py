@@ -84,15 +84,24 @@ def post_report(
     visibility: str = "private",
     tags: list[str] | None = None,
     project: str | None = None,
+    files: dict[str, str] | None = None,
 ) -> str:
-    """Publish an HTML report to Hub and return the shareable URL."""
-    payload = {
+    """Publish an HTML report (primary document) to Hub and return the shareable URL.
+
+    For richer tree reports, pass `files` (relpath -> base64 content). 
+    The `html` (if provided) is automatically substituted into the file tree as "index.html"
+    (moving the main page HTML over into the tree in the folder that makes sense: root).
+    Old callers using only html continue to work unchanged.
+    """
+    payload: dict[str, Any] = {
         "html": html,
         "title": title,
         "visibility": visibility,
         "tags": tags or [],
         "project": project,
     }
+    if files:
+        payload["files"] = files
     result = _request("POST", "/api/artifacts", json=payload)
     return json.dumps(result, indent=2)
 
@@ -113,9 +122,11 @@ def update_report(
     visibility: str | None = None,
     tags: list[str] | None = None,
     project: str | None = None,
+    files: dict[str, str] | None = None,
 ) -> str:
     """Edit an existing report in place. Keeps the same id and URL — use this to
-    revise a report instead of publishing a new one. Only the fields you pass change."""
+    revise a report instead of publishing a new one. Only the fields you pass change.
+    `html` (if provided) is substituted into the file tree as "index.html" (moving main HTML over)."""
     payload: dict[str, Any] = {}
     if html is not None:
         payload["html"] = html
@@ -127,6 +138,8 @@ def update_report(
         payload["tags"] = tags
     if project is not None:
         payload["project"] = project
+    if files is not None:
+        payload["files"] = files
     result = _request("PATCH", f"/api/artifacts/{report_id}", json=payload)
     return json.dumps(result, indent=2)
 

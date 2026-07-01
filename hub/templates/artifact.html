@@ -1,46 +1,91 @@
 {% extends "base.html" %}
 
 {% block title %}{{ artifact.title }}{% endblock %}
-{% block body_class %}report-view{% endblock %}
+{% block body_class %}file-tree-view{% endblock %}
 {% block header %}{% endblock %}
 {% block main_class %}report-main{% endblock %}
 
+{% macro render_file_tree(node, artifact_id, depth=0) %}
+  {% if node.is_dir %}
+    <details class="tree-dir">
+      <summary class="tree-summary" style="--depth: {{ depth }}" tabindex="0" role="treeitem" aria-expanded="true">
+        <span class="chevron"><i data-lucide="chevron-right"></i></span>
+        <span class="icon"><i data-lucide="folder"></i></span>
+        <span class="name">{{ node.name }}</span>
+      </summary>
+      <div class="tree-children">
+        {% for child in node.children %}
+          {{ render_file_tree(child, artifact_id, depth + 1) }}
+        {% endfor %}
+      </div>
+    </details>
+  {% else %}
+    <div class="tree-file" style="--depth: {{ depth }}" tabindex="0" role="treeitem">
+      <a href="/a/{{ artifact_id }}/{{ node.path }}" target="_blank" class="file-link">
+        <span class="icon"><i data-lucide="file"></i></span>
+        <span class="name">{{ node.name }}</span>
+      </a>
+      {% if node.size %}
+        <span class="size">{{ node.size | format_bytes }}</span>
+      {% endif %}
+    </div>
+  {% endif %}
+{% endmacro %}
+
 {% block content %}
-<div class="report-shell">
-  <iframe
-    class="report-frame"
-    id="report-frame"
-    src="/a/{{ artifact.id }}/raw"
-    sandbox="allow-scripts allow-same-origin"
-    title="{{ artifact.title }}"
-  ></iframe>
+<nav class="report-dock liquid-glass" id="report-dock" role="toolbar" aria-label="Report actions">
+  <a class="report-dock-btn" href="/" aria-label="Back to {{ settings.brand_name if settings else 'Hub' }}">
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" fill="currentColor"/></svg>
+    <span class="report-dock-label">Hub</span>
+  </a>
+  <span class="report-dock-sep" aria-hidden="true"></span>
+  <button type="button" class="report-dock-btn" id="share-btn" data-url="{{ artifact.url }}" aria-label="Share report">
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7a3.27 3.27 0 0 0 0-1.39l7.05-4.11A3 3 0 1 0 13 6.5l-7.05 4.11a3 3 0 1 0 0 4.78l7.05 4.11a3 3 0 1 0 1.08-1.72z" fill="currentColor"/></svg>
+    <span class="report-dock-label">Share</span>
+  </button>
+  <span class="report-dock-sep" aria-hidden="true"></span>
+  <a class="report-dock-btn" href="/a/{{ artifact.id }}/download" download aria-label="Download report">
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" fill="currentColor"/></svg>
+    <span class="report-dock-label">Download</span>
+  </a>
+  <span class="report-dock-sep" aria-hidden="true"></span>
+  <a class="report-dock-btn" href="/a/{{ artifact.id }}/raw" target="_blank" aria-label="View main report HTML">
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" fill="currentColor"/></svg>
+    <span class="report-dock-label">Main report</span>
+  </a>
+</nav>
 
-  <nav class="report-dock liquid-glass" id="report-dock" role="toolbar" aria-label="Report actions">
-    <a class="report-dock-btn" href="/" aria-label="Back to {{ settings.brand_name if settings else 'Hub' }}">
-      <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" fill="currentColor"/></svg>
-      <span class="report-dock-label">Hub</span>
-    </a>
-    <span class="report-dock-sep" aria-hidden="true"></span>
-    <button type="button" class="report-dock-btn" id="share-btn" data-url="{{ artifact.url }}" aria-label="Share report">
-      <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7a3.27 3.27 0 0 0 0-1.39l7.05-4.11A3 3 0 1 0 13 6.5l-7.05 4.11a3 3 0 1 0 0 4.78l7.05 4.11a3 3 0 1 0 1.08-1.72z" fill="currentColor"/></svg>
-      <span class="report-dock-label">Share</span>
-    </button>
-    <span class="report-dock-sep" aria-hidden="true"></span>
-    <a class="report-dock-btn" href="/a/{{ artifact.id }}/download" download aria-label="Download report">
-      <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" fill="currentColor"/></svg>
-      <span class="report-dock-label">Download</span>
-    </a>
-  </nav>
+<div class="report-toast liquid-glass" id="share-toast" hidden>Link copied</div>
 
-  <div class="report-toast liquid-glass" id="share-toast" hidden>Link copied</div>
+{# The new file tree is now the main viewer for the report.
+   The old single-HTML is stored as index.html (or other files) inside the tree.
+   Main page HTMLs have been substituted into the file tree. #}
+<div class="main-explorer">
+  <h1 class="report-title">{{ artifact.title }}</h1>
+  <div class="file-tree">
+    <div class="file-tree-tabs">
+      <div class="tab active">Explorer</div>
+    </div>
+    <div class="file-tree-body">
+      {% if tree and tree.children %}
+        {% for child in tree.children %}
+          {{ render_file_tree(child, artifact.id, 0) }}
+        {% endfor %}
+      {% else %}
+        <div class="empty-tree">No files in this report.</div>
+      {% endif %}
+    </div>
+  </div>
 </div>
+
+<!-- Load Lucide icons (same library used by shadcn/ui) -->
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js" onload="if (window.lucide && typeof window.lucide.createIcons === 'function') { window.lucide.createIcons(); }"></script>
 
 <script>
 (function () {
   const btn = document.getElementById('share-btn');
   const toast = document.getElementById('share-toast');
   const dock = document.getElementById('report-dock');
-  const frame = document.getElementById('report-frame');
   if (!btn || !dock) return;
 
   function showToast(message) {
@@ -70,26 +115,6 @@
       prompt('Copy this link:', url);
     }
   });
-
-  function bindFrameScroll() {
-    if (!frame) return;
-    try {
-      const doc = frame.contentDocument || frame.contentWindow.document;
-      const target = doc.scrollingElement || doc.documentElement;
-      const onScroll = () => {
-        dock.classList.toggle('report-dock--scrolled', target.scrollTop > 40);
-      };
-      target.addEventListener('scroll', onScroll, { passive: true });
-      onScroll();
-    } catch (_) {
-      /* iframe not readable */
-    }
-  }
-
-  if (frame) {
-    frame.addEventListener('load', bindFrameScroll);
-    if (frame.contentDocument?.readyState === 'complete') bindFrameScroll();
-  }
 })();
 </script>
 {% endblock %}

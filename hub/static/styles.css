@@ -177,6 +177,7 @@ body {
 
 body.dashboard-view {
   --dock-offset: max(48px, calc(env(safe-area-inset-bottom, 0px) + 28px));
+  --dock-bar-height: 50px;
   min-height: 100dvh;
   color-scheme: light;
   --bg: #ffffff;
@@ -216,19 +217,73 @@ body.dashboard-view::after {
 body.dashboard-view .dashboard-main {
   display: flex;
   flex-direction: column;
-  padding-top: max(3.75rem, calc(env(safe-area-inset-top, 0px) + 2.5rem));
-  padding-bottom: max(7.5rem, env(safe-area-inset-bottom, 0px));
+  padding-top: max(2.5rem, calc(env(safe-area-inset-top, 0px) + 1.5rem));
+  padding-bottom: max(11rem, calc(env(safe-area-inset-bottom, 0px) + 9rem));
 }
 
-.dashboard-hero {
-  padding: 1.1rem 1.3rem;
-  margin-bottom: 1rem;
-  border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.78);
-  -webkit-backdrop-filter: blur(30px) saturate(1.3);
-  backdrop-filter: blur(30px) saturate(1.3);
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  box-shadow: 0 8px 30px rgba(31, 41, 70, 0.08);
+.dashboard-brand-vignette {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: min(42vw, 400px);
+  height: min(40vh, 280px);
+  z-index: 4;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse 95% 100% at 0% 100%,
+      rgba(255, 255, 255, 0.99) 0%,
+      rgba(255, 255, 255, 0.94) 30%,
+      rgba(255, 255, 255, 0.7) 50%,
+      rgba(255, 255, 255, 0.25) 68%,
+      transparent 82%
+    );
+  -webkit-mask-image: linear-gradient(to top right, #000 35%, transparent 72%);
+  mask-image: linear-gradient(to top right, #000 35%, transparent 72%);
+}
+
+.dashboard-brand {
+  position: fixed;
+  left: max(2rem, calc(env(safe-area-inset-left, 0px) + 2rem));
+  bottom: calc(var(--dock-offset) - 10px);
+  z-index: 6;
+  max-width: min(33.333vw, calc(min(1080px, calc(100vw - 2.5rem)) / 3));
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
+.dashboard-brand-eyebrow {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1.3;
+}
+
+.dashboard-brand-eyebrow::before {
+  content: "● ";
+  font-size: 0.5rem;
+  vertical-align: middle;
+  opacity: 0.55;
+}
+
+.dashboard-brand-title {
+  margin: 0;
+  max-width: 100%;
+  min-height: var(--dock-bar-height);
+  display: flex;
+  align-items: center;
+  font-size: clamp(1.75rem, 3.6vw, 2.75rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  hyphens: auto;
 }
 
 h1 {
@@ -597,11 +652,22 @@ h1 {
 
 /* ── Empty state ── */
 
+.file-tree,
+.empty-state {
+  max-width: 100%;
+  margin: 0 auto;
+  background: rgba(255, 255, 255, 0.82);
+  -webkit-backdrop-filter: blur(30px) saturate(1.3);
+  backdrop-filter: blur(30px) saturate(1.3);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: 0 8px 30px rgba(31, 41, 70, 0.08);
+}
+
 .empty-state {
   padding: 3rem 1rem;
   text-align: center;
-  border: 1px dashed var(--border-strong);
-  border-radius: var(--radius-md);
 }
 
 .empty-state-title {
@@ -829,26 +895,28 @@ h1 {
 
 /* ── Report viewer ── */
 
-body.report-view {
-  overflow: hidden;
-  height: 100dvh;
-  margin: 0;
+body.dashboard-view {
+  min-height: 100dvh;
   background: #fff;
+  color: var(--text, #1d1d1f);
 }
 
-body.report-view .report-main {
-  width: 100%;
-  max-width: none;
-  margin: 0;
-  padding: 0;
-  height: 100dvh;
+body.dashboard-view .report-main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 20px 16px 100px;
 }
 
-.report-shell {
-  position: fixed;
-  inset: 0;
-  overflow: hidden;
-  background: #fff;
+/* The new main file explorer takes center stage */
+.main-explorer {
+  padding-top: 16px;
+}
+
+.report-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 12px;
+  color: var(--text, #1d1d1f);
 }
 
 .report-frame {
@@ -974,6 +1042,300 @@ body.report-view .report-main {
   background: rgba(0, 0, 0, 0.1);
 }
 
+/* Files panel (for VanillaTreeViewer integration) */
+.files-panel {
+  position: fixed;
+  left: 50%;
+  bottom: calc(70px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: 20;
+  width: min(720px, calc(100vw - 32px));
+  max-height: 55vh;
+  background: var(--glass-tint, rgba(255,255,255,0.14));
+  border: 1px solid var(--glass-border, rgba(255,255,255,0.45));
+  border-radius: 16px;
+  backdrop-filter: blur(20px);
+  box-shadow: var(--glass-shadow, 0 8px 32px rgba(0,0,0,0.1));
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.files-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border, rgba(0,0,0,0.06));
+  background: rgba(255,255,255,0.4);
+}
+
+.files-panel-header strong {
+  font-weight: 600;
+  color: var(--text);
+}
+
+#close-files-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+  color: var(--text);
+}
+
+.files-panel-content {
+  overflow: auto;
+  padding: 8px;
+  background: var(--surface-solid, #fff);
+}
+
+/* =====================
+   shadcn-like File Tree
+   (styled to match the reference image)
+   ===================== */
+
+.file-tree {
+  background: rgba(255, 255, 255, 0.92);
+  -webkit-backdrop-filter: blur(20px) saturate(1.2);
+  backdrop-filter: blur(20px) saturate(1.2);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  color: var(--text, #1d1d1f);
+  font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  overflow: hidden;
+
+  /* consistent spacing for alignment */
+  --tree-base-pad: 8px;
+  --tree-depth-step: 18px;
+  --tree-chevron-space: 16px;
+}
+
+.file-tree-tabs {
+  display: flex;
+  background: rgba(246, 248, 250, 0.55);
+  padding: 4px;
+  gap: 4px;
+}
+
+.file-tree-tabs .tab {
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted, rgba(60, 60, 67, 0.6));
+  cursor: default;
+}
+
+.file-tree-tabs .tab.active {
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--text, #1d1d1f);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.file-tree-body {
+  padding: 4px 0;
+  background: #fff;
+}
+
+.tree-children {
+  background: #fff;
+}
+
+.tree-dir,
+.tree-file {
+  margin: 1px 0;
+}
+
+.tree-summary {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 6px;
+  padding-left: calc(var(--tree-base-pad) + var(--depth, 0) * var(--tree-depth-step));
+  cursor: pointer;
+  user-select: none;
+  border-radius: 4px;
+  margin: 0 4px;
+  color: var(--text, #1d1d1f);
+  background: #fff;
+  list-style: none;
+}
+
+.tree-summary::-webkit-details-marker {
+  display: none;
+}
+
+.tree-summary::marker {
+  content: "";
+}
+
+.tree-summary:hover {
+  background: rgba(246, 248, 250, 0.85);
+}
+
+.tree-file {
+  background: #fff;
+}
+
+.tree-file:hover {
+  background: rgba(246, 248, 250, 0.85);
+}
+
+.tree-summary:focus,
+.tree-file:focus {
+  outline: 2px solid var(--accent, #007aff);
+  outline-offset: -2px;
+  background: rgba(0, 122, 255, 0.08);
+}
+
+.tree-summary .chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tree-chevron-space);
+  height: 16px;
+  color: var(--muted, rgba(60, 60, 67, 0.6));
+  transition: transform 0.1s ease;
+  flex-shrink: 0;
+}
+
+.tree-dir[open] > .tree-summary .chevron {
+  transform: rotate(90deg);
+}
+
+.tree-summary svg,
+.tree-file svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.tree-summary .icon svg,
+.tree-file .icon svg,
+.tree-summary .chevron svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+}
+
+.tree-summary .icon,
+.tree-file .icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--muted, rgba(60, 60, 67, 0.6));
+}
+
+.tree-summary .name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text, #1d1d1f);
+}
+
+.tree-file .name {
+  color: var(--text, #1d1d1f);
+}
+
+.tree-children {
+  padding-left: 0;
+  background: #fff;
+}
+
+.tree-file {
+  display: flex;
+  align-items: center;
+  padding: 3px 6px;
+  padding-left: calc(var(--tree-base-pad) + var(--depth, 0) * var(--tree-depth-step));
+  border-radius: 4px;
+  margin: 0 8px;
+}
+
+.tree-file:hover {
+  background: rgba(246, 248, 250, 0.7);
+}
+
+.tree-file .file-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  text-decoration: none;
+  color: inherit;
+  min-width: 0;
+  margin-left: var(--tree-chevron-space);
+}
+
+.tree-file .name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  color: var(--text, #1d1d1f);
+}
+
+.tree-file .size {
+  font-size: 11px;
+  color: var(--muted, rgba(60, 60, 67, 0.6));
+  margin-left: 8px;
+  flex-shrink: 0;
+}
+
+.tree-delete {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--muted, rgba(60, 60, 67, 0.6));
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  opacity: 0.6;
+}
+
+.tree-delete:hover {
+  color: #f44;
+  opacity: 1;
+}
+
+.tree-file:hover .tree-delete {
+  opacity: 1;
+}
+
+/* Make the panel itself nicer */
+.files-panel {
+  background: rgba(255, 255, 255, 0.82);
+  -webkit-backdrop-filter: blur(30px) saturate(1.3);
+  backdrop-filter: blur(30px) saturate(1.3);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 30px rgba(31, 41, 70, 0.08);
+}
+
+.files-panel-header {
+  background: rgba(246, 248, 250, 0.55);
+  color: var(--text, #1d1d1f);
+  border-bottom: 1px solid var(--border, rgba(0, 0, 0, 0.06));
+}
+
+#close-files-btn {
+  color: var(--muted, rgba(60, 60, 67, 0.6));
+}
+
+#close-files-btn:hover {
+  color: var(--text, #1d1d1f);
+}
+
 .report-toast {
   --glass-tint: rgba(120, 120, 128, 0.2);
   --glass-border: rgba(255, 255, 255, 0.4);
@@ -997,8 +1359,19 @@ body.report-view .report-main {
     width: calc(100% - 1.5rem);
   }
 
-  .dashboard-hero {
-    padding: 1.25rem 0 1rem;
+  .dashboard-brand-vignette {
+    width: min(52vw, 340px);
+    height: min(36vh, 240px);
+  }
+
+  .dashboard-brand {
+    left: max(1.5rem, calc(env(safe-area-inset-left, 0px) + 1.5rem));
+    bottom: calc(var(--dock-offset) - 8px);
+    max-width: 33.333vw;
+  }
+
+  .dashboard-brand-title {
+    font-size: clamp(1.5rem, 7vw, 2.125rem);
   }
 
   h1 {
@@ -1034,4 +1407,95 @@ body.report-view .report-main {
   .file-row:hover {
     background: rgba(120, 120, 128, 0.12);
   }
+}
+
+/* ── Proven pure CSS + <details> tree view ──
+   From https://iamkate.com/code/tree-views/ (widely used, zero JS, accessible)
+   Adapted to our design tokens.
+*/
+
+.tree {
+  --spacing: 1.5rem;
+  --radius: 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  max-width: 680px;
+  margin: 12px 20px 24px;
+  background: var(--surface-solid, #fff);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 8px 12px;
+}
+
+.tree li {
+  display: block;
+  position: relative;
+  padding-left: calc(2 * var(--spacing) - var(--radius) - 2px);
+}
+
+.tree ul {
+  margin-left: calc(var(--radius) - var(--spacing));
+  padding-left: 0;
+}
+
+.tree ul li {
+  border-left: 2px solid var(--border);
+}
+
+.tree ul li:last-child {
+  border-color: transparent;
+}
+
+.tree ul li::before {
+  content: '';
+  display: block;
+  position: absolute;
+  top: calc(var(--spacing) / -2);
+  left: -2px;
+  width: calc(var(--spacing) + 2px);
+  height: calc(var(--spacing) + 1px);
+  border: solid var(--border);
+  border-width: 0 0 2px 2px;
+}
+
+.tree summary {
+  display: block;
+  cursor: pointer;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.tree summary::marker,
+.tree summary::-webkit-details-marker {
+  display: none;
+}
+
+.tree summary:focus {
+  outline: none;
+}
+
+.tree summary:focus-visible {
+  outline: 1px dotted var(--text);
+}
+
+.tree li::after,
+.tree summary::before {
+  content: '';
+  display: block;
+  position: absolute;
+  top: calc(var(--spacing) / 2 - var(--radius));
+  left: calc(var(--spacing) - var(--radius) - 1px);
+  width: calc(2 * var(--radius));
+  height: calc(2 * var(--radius));
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.tree summary::before {
+  z-index: 1;
+  background: var(--accent) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path fill="white" d="M4 4l8 4-8 4z"/></svg>') 0 0 / contain no-repeat;
+}
+
+.tree details[open] > summary::before {
+  background-position: calc(-2 * var(--radius)) 0;
 }

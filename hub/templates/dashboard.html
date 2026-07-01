@@ -5,26 +5,75 @@
 {% block header %}{% endblock %}
 {% block main_class %}container dashboard-main{% endblock %}
 
-{% block content %}
-<section class="dashboard-hero">
-  <h1>{{ settings.brand_name }}</h1>
-  <p class="subtitle">
-    {% if settings.trust_network %}
-    A shared report inbox. Anyone on the network can read and publish.
-    {% elif is_hub_owner %}
-    Your personal report inbox — share reports securely over Tailscale when you want to.
-    {% else %}
-    Shared reports from {{ hub_owner }}'s hub.
-    {% endif %}
-  </p>
-</section>
+{% macro render_dashboard_tree(node, depth=0) %}
+  {% if node.is_dir %}
+    <details class="tree-dir">
+      <summary class="tree-summary" style="--depth: {{ depth }}" tabindex="0" role="treeitem" aria-expanded="true">
+        <span class="chevron"><i data-lucide="chevron-right"></i></span>
+        <span class="icon"><i data-lucide="folder"></i></span>
+        <span class="name">{{ node.name }}</span>
+      </summary>
+      <div class="tree-children">
+        {% for child in node.children %}
+          {{ render_dashboard_tree(child, depth + 1) }}
+        {% endfor %}
+      </div>
+    </details>
+  {% else %}
+    <div id="artifact-{{ node.id }}" class="tree-file" style="--depth: {{ depth }}" data-url="{{ node.url }}" data-title="{{ node.title }}" tabindex="0" role="treeitem">
+      <a href="{{ node.path }}" class="file-link">
+        <span class="icon"><i data-lucide="file"></i></span>
+        <span class="name">{{ node.name }}</span>
+      </a>
+      {% if node.size %}
+        <span class="size">{{ node.size | format_bytes }}</span>
+      {% endif %}
+      <button type="button" class="tree-delete" onclick="deleteReport(this)" aria-label="Delete">×</button>
+    </div>
+  {% endif %}
+{% endmacro %}
 
-<div id="artifact-results">
-  {% include "partials/artifact_list.html" %}
+{% block content %}
+<div id="artifact-results" class="main-explorer">
+  {% if tree and tree.children %}
+  <div class="file-tree">
+    <div class="file-tree-tabs">
+      <div class="tab active">Explorer</div>
+    </div>
+    <div class="file-tree-body">
+      {% for child in tree.children %}
+        {{ render_dashboard_tree(child, 0) }}
+      {% endfor %}
+    </div>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <p class="empty-state-title">No reports{% if query %} matching “{{ query }}”{% endif %}</p>
+    <p class="empty-state-desc">Post one from your AI agent with the <a href="https://github.com/gabrycina/hub#getting-started" target="_blank" rel="noopener"><code>hub-publish</code></a> skill.</p>
+  </div>
+  {% endif %}
 </div>
+
+<!-- Load Lucide icons -->
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js" onload="if (window.lucide && typeof window.lucide.createIcons === 'function') { window.lucide.createIcons(); }"></script>
 {% endblock %}
 
 {% block page_overlay %}
+<div class="dashboard-brand-vignette" aria-hidden="true"></div>
+
+<div class="dashboard-brand">
+  <p class="dashboard-brand-eyebrow">
+    {% if settings.trust_network %}
+    Shared report inbox
+    {% elif is_hub_owner %}
+    Personal report inbox
+    {% else %}
+    {{ hub_owner }}'s hub
+    {% endif %}
+  </p>
+  <h1 class="dashboard-brand-title">{{ settings.brand_name }}</h1>
+</div>
+
 <nav class="hub-dock liquid-glass" id="hub-dock" aria-label="Hub navigation, search, and filters">
   <input type="hidden" name="scope" id="scope-input" value="{{ scope }}">
 
@@ -77,7 +126,7 @@
 
 <script>
 async function deleteReport(el) {
-  const row = el.closest('.file-row');
+  const row = el.closest('.file-row, .tree-file');
   if (!row) return;
   if (!confirm('Delete this report?')) return;
 
@@ -92,7 +141,7 @@ async function deleteReport(el) {
     row.style.opacity = '0';
     setTimeout(() => {
       row.remove();
-      if (!document.querySelector('.file-row') && typeof window.refreshReports === 'function') {
+      if (!document.querySelector('.file-row, .tree-file') && typeof window.refreshReports === 'function') {
         window.refreshReports();
       }
     }, 200);
@@ -107,7 +156,7 @@ async function deleteReport(el) {
 }
 
 async function shareReport(el) {
-  const row = el.closest('.file-row');
+  const row = el.closest('.file-row, .tree-file');
   if (!row) return;
   const url = row.dataset.url;
   const title = row.dataset.title;
@@ -207,6 +256,13 @@ async function shareReport(el) {
       if (!res.ok) return;
       target.innerHTML = await res.text();
       if (typeof htmx !== 'undefined') htmx.process(target);
+      if (window.lucide && typeof window.lucide.createIcons === 'function') {
+        window.lucide.createIcons();
+      }
+      if (window.initTreeKeyboardNav) {
+        window.initTreeKeyboardNav();
+        // The init function already tries to auto-focus the first item
+      }
     } catch (_) { /* ignore */ }
   }
 
@@ -228,5 +284,162 @@ async function shareReport(el) {
 
   window.refreshReports = refreshReports;
 })();
+
+// Keyboard arrow navigation for the file tree (Explorer)
+function initTreeKeyboardNav() {
+  function getVisibleItems(container) {
+    const items = [];
+    const candidates = container.querySelectorAll('.tree-summary, .tree-file');
+    candidates.forEach(el => {
+      let p = el.parentElement;
+      let vis = true;
+      while (p && p !== container) {
+        if (p.tagName === 'DETAILS' && !p.open) {
+          // A folder's own summary header is always visible even if closed.
+          // Only hide its *children*.
+          if (el.classList.contains('tree-summary') && el.parentElement === p) {
+            // keep visible
+          } else {
+            vis = false;
+            break;
+          }
+        }
+        p = p.parentElement;
+      }
+      if (vis) items.push(el);
+    });
+    return items;
+  }
+
+  function focusItem(item) {
+    if (!item) return;
+    item.focus();
+    item.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+  }
+
+  // Attach key handler only once
+  if (!window._hubTreeKbdAttached) {
+    window._hubTreeKbdAttached = true;
+
+    document.addEventListener('keydown', function(e) {
+      const tree = document.querySelector('.file-tree');
+      if (!tree) return;
+
+      const active = document.activeElement;
+      if (!tree.contains(active)) return;
+
+      const items = getVisibleItems(tree);
+      if (!items.length) return;
+
+      let idx = items.indexOf(active);
+      if (idx === -1) {
+        const insideFile = active.closest && active.closest('.tree-file');
+        if (insideFile) idx = items.indexOf(insideFile);
+      }
+      if (idx === -1) idx = 0;
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        focusItem(items[(idx + 1) % items.length]);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        focusItem(items[(idx - 1 + items.length) % items.length]);
+      } else if (e.key === 'ArrowRight') {
+        if (active.classList.contains('tree-summary')) {
+          const det = active.closest('details.tree-dir');
+          if (det && !det.open) {
+            det.open = true;
+            active.setAttribute('aria-expanded', 'true');
+            e.preventDefault();
+            setTimeout(() => {
+              const newItems = getVisibleItems(tree);
+              const firstChild = active.parentElement.querySelector('.tree-children .tree-summary, .tree-children .tree-file');
+              if (firstChild) focusItem(firstChild);
+            }, 0);
+          }
+        }
+      } else if (e.key === 'ArrowLeft') {
+        if (active.classList.contains('tree-summary')) {
+          const det = active.closest('details.tree-dir');
+          if (det && det.open) {
+            det.open = false;
+            active.setAttribute('aria-expanded', 'false');
+            e.preventDefault();
+          } else {
+            const parentDet = active.closest('details.tree-dir')?.parentElement?.closest('details.tree-dir');
+            if (parentDet) {
+              const pSum = parentDet.querySelector(':scope > .tree-summary');
+              if (pSum) focusItem(pSum);
+              e.preventDefault();
+            }
+          }
+        } else if (active.classList.contains('tree-file')) {
+          const parentDet = active.closest('details.tree-dir');
+          if (parentDet) {
+            const pSum = parentDet.querySelector(':scope > .tree-summary');
+            if (pSum) {
+              focusItem(pSum);
+              e.preventDefault();
+            }
+          }
+        }
+      } else if ((e.key === 'Enter' || e.key === ' ') && active.classList.contains('tree-file')) {
+        const link = active.querySelector('a.file-link');
+        if (link) {
+          e.preventDefault();
+          link.click();
+        }
+      }
+    });
+  }
+
+  // Ensure items are keyboard focusable
+  document.querySelectorAll('.file-tree .tree-summary, .file-tree .tree-file').forEach(el => {
+    if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
+  });
+
+  // Keep aria-expanded in sync for mouse clicks too
+  document.querySelectorAll('.file-tree').forEach(treeEl => {
+    treeEl.addEventListener('toggle', (ev) => {
+      const det = ev.target;
+      if (det && det.tagName === 'DETAILS') {
+        const sum = det.querySelector(':scope > .tree-summary');
+        if (sum) sum.setAttribute('aria-expanded', det.open ? 'true' : 'false');
+      }
+    }, true);
+  });
+
+  // Auto-focus the first tree item on (re)initialization so arrows work immediately
+  // without having to click the tree first.
+  setTimeout(() => {
+    const tree = document.querySelector('.file-tree');
+    if (tree) {
+      const active = document.activeElement;
+      if (!active || active === document.body || active.tagName === 'BODY') {
+        const first = getVisibleItems(tree)[0];
+        if (first) {
+          focusItem(first);
+        }
+      }
+    }
+  }, 80);
+}
+
+window.initTreeKeyboardNav = initTreeKeyboardNav;
+
+// Auto init + re-init after HTMX swaps
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => setTimeout(initTreeKeyboardNav, 0));
+} else {
+  setTimeout(initTreeKeyboardNav, 0);
+}
+
+document.addEventListener('htmx:afterSettle', (e) => {
+  const target = e.detail && e.detail.target;
+  if (target && target.querySelector && target.querySelector('.file-tree')) {
+    if (window.lucide && typeof window.lucide.createIcons === 'function') window.lucide.createIcons();
+    if (window.initTreeKeyboardNav) window.initTreeKeyboardNav();
+  }
+});
 </script>
 {% endblock %}

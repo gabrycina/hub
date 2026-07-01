@@ -1,20 +1,56 @@
-{% if artifacts %}
-<div id="artifact-list" class="file-list">
-  <div class="file-list-head" aria-hidden="true">
-    <span class="col-name">Name</span>
-    <span class="col-meta">Info</span>
-    <span class="col-date">Updated</span>
-    <span class="col-size">Size</span>
-    <span class="col-actions"></span>
+{# New file tree view substituted for the old table list.
+   Reports are now shown in project folders using the shadcn-style collapsible tree.
+   The main page HTMLs (reports) have been moved over into the file tree structure. #}
+{% if tree and tree.children %}
+<div id="artifact-list" class="main-explorer">
+  <div class="file-tree">
+    <div class="file-tree-tabs">
+      <div class="tab active">Explorer</div>
+    </div>
+    <div class="file-tree-body">
+      {% for child in tree.children %}
+        {% if child.is_dir %}
+          <details class="tree-dir">
+            <summary class="tree-summary" style="--depth: 0" tabindex="0" role="treeitem" aria-expanded="true">
+              <span class="chevron"><i data-lucide="chevron-right"></i></span>
+              <span class="icon"><i data-lucide="folder"></i></span>
+              <span class="name">{{ child.name }}</span>
+            </summary>
+            <div class="tree-children">
+              {% for report in child.children %}
+                <div id="artifact-{{ report.id }}" class="tree-file" style="--depth: 1" data-url="{{ report.url }}" data-title="{{ report.title }}" tabindex="0" role="treeitem">
+                  <a href="{{ report.path }}" class="file-link">
+                    <span class="icon"><i data-lucide="file"></i></span>
+                    <span class="name">{{ report.name }}</span>
+                  </a>
+                  {% if report.size %}
+                    <span class="size">{{ report.size | format_bytes }}</span>
+                  {% endif %}
+                  <button type="button" class="tree-delete" onclick="deleteReport(this)" aria-label="Delete">×</button>
+                </div>
+              {% endfor %}
+            </div>
+          </details>
+        {% else %}
+          <div id="artifact-{{ child.id }}" class="tree-file" style="--depth: 0" data-url="{{ child.url }}" data-title="{{ child.title }}" tabindex="0" role="treeitem">
+            <a href="{{ child.path }}" class="file-link">
+              <span class="icon"><i data-lucide="file"></i></span>
+              <span class="name">{{ child.name }}</span>
+            </a>
+            {% if child.size %}
+              <span class="size">{{ child.size | format_bytes }}</span>
+            {% endif %}
+          </div>
+        {% endif %}
+      {% endfor %}
+    </div>
   </div>
-  {% for artifact in artifacts %}
-  {% set can_manage = settings.trust_network or is_hub_owner or (auth and auth.user == artifact.owner) %}
-  {% include "partials/artifact_row.html" %}
-  {% endfor %}
 </div>
 {% else %}
+<div class="main-explorer">
 <div class="empty-state">
   <p class="empty-state-title">No reports{% if query %} matching “{{ query }}”{% endif %}</p>
   <p class="empty-state-desc">Post one from your AI agent with the <a href="https://github.com/gabrycina/hub#getting-started" target="_blank" rel="noopener"><code>hub-publish</code></a> skill.</p>
+</div>
 </div>
 {% endif %}

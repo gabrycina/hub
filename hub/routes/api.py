@@ -1,4 +1,5 @@
 from datetime import datetime
+import base64
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from nanoid import generate
@@ -42,14 +43,38 @@ def create_artifact(
     db: Database = Depends(get_db),
     storage: ArtifactStorage = Depends(get_storage),
 ) -> ArtifactResponse:
-    if len(payload.html.encode("utf-8")) > settings.max_upload_bytes:
+    # Substitute main page html into the file tree (as index.html at root, which makes sense for the primary document).
+    # This unifies everything under the new file tree storage. Existing "html" is moved over into the files structure.
+    all_files = dict(payload.files or {})
+    if payload.html is not None:
+        all_files["index.html"] = base64.b64encode(payload.html.encode("utf-8")).decode("ascii")
+
+    # Compute approximate total size for limit check
+    total_bytes = 0
+    for v in all_files.values():
+        if isinstance(v, str):
+            total_bytes += int(len(v) * 3 / 4)  # rough base64 decode size
+        else:
+            total_bytes += len(v)
+    if total_bytes > settings.max_upload_bytes:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail=f"HTML exceeds {settings.max_upload_bytes} bytes",
+            detail=f"Payload exceeds {settings.max_upload_bytes} bytes",
         )
 
     artifact_id = generate(size=12)
-    size_bytes = storage.write(artifact_id, payload.html)
+
+    # Write all files into the tree (main html is now just "index.html" in the tree)
+    for rel, content in all_files.items():
+        data = base64.b64decode(content) if isinstance(content, str) else content
+        storage.write_file(artifact_id, rel, data)
+
+    # Clean legacy if any (new artifacts use tree)
+    legacy = storage._legacy_path(artifact_id)
+    if legacy.exists():
+        legacy.unlink()
+
+    size_bytes = storage.get_size(artifact_id)
     row = db.create(
         id=artifact_id,
         title=payload.title,
@@ -113,15 +138,37 @@ def update_artifact(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
     _require_owner(row, auth)
 
-    # Editing the HTML in place keeps the same id and URL.
-    size_bytes = None
+    # Substitute main page html into the file tree (as index.html).
+    # html is moved over into the files structure for the tree layout.
+    all_files = dict(payload.files or {})
     if payload.html is not None:
-        if len(payload.html.encode("utf-8")) > settings.max_upload_bytes:
-            raise HTTPException(
-                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-                detail=f"HTML exceeds {settings.max_upload_bytes} bytes",
-            )
-        size_bytes = storage.write(artifact_id, payload.html)
+        all_files["index.html"] = base64.b64encode(payload.html.encode("utf-8")).decode("ascii")
+
+    # Size limit (approximate) for the patch
+    patch_size = 0
+    for v in all_files.values():
+        if isinstance(v, str):
+            patch_size += int(len(v) * 3 / 4)
+        else:
+            patch_size += len(v)
+    if patch_size > settings.max_upload_bytes:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"Payload exceeds {settings.max_upload_bytes} bytes",
+        )
+
+    # Write files into the tree (main html now just another entry in the tree)
+    for rel, content in all_files.items():
+        data = base64.b64decode(content) if isinstance(content, str) else content
+        storage.write_file(artifact_id, rel, data)
+
+    # Clean any legacy single-file html now that we're using the tree
+    if all_files:
+        legacy = storage._legacy_path(artifact_id)
+        if legacy.exists():
+            legacy.unlink()
+
+    size_bytes = storage.get_size(artifact_id) if all_files else None
 
     updated = db.update(
         artifact_id,

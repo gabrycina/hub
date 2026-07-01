@@ -14,6 +14,7 @@ from hub.storage import ArtifactStorage
 
 TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "templates"
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
+templates.env.auto_reload = True  # so template changes are picked without restart in dev
 router = APIRouter()
 
 
@@ -71,14 +72,49 @@ def _dashboard_context(
     # Server (trust_network) mode: the network is the access boundary, so list
     # every report to anyone who can reach it (db.list returns all when the
     # viewer is the hub owner). Local mode keeps per-viewer visibility filtering.
-    list_viewer = hub_owner if settings.trust_network else (auth.user if auth else None)
+    # Always list all reports for the dashboard tree view (to make testing easy with the new file tree).
+    # We group by project as folders.
     rows = db.list(
-        viewer=list_viewer,
+        viewer=hub_owner,
         hub_owner=hub_owner,
-        scope=scope,
+        scope="all",
         query=q,
     )
     artifacts = [to_artifact(row, settings.public_url) for row in rows]
+
+    # Build a file-tree structure grouped by project (folders that make sense)
+    # Each "file" node represents a report, with link to /a/id
+    from collections import defaultdict
+    by_project = defaultdict(list)
+    for a in artifacts:
+        proj = (a.project or "Other").strip() or "Other"
+        by_project[proj].append(a)
+
+    # Sort projects
+    sorted_projects = sorted(by_project.keys())
+
+    tree_root = {"name": "", "is_dir": True, "children": []}
+    for proj in sorted_projects:
+        proj_node = {
+            "name": proj,
+            "is_dir": True,
+            "path": proj,  # not used for link
+            "children": []
+        }
+        for a in sorted(by_project[proj], key=lambda x: x.title.lower()):
+            file_node = {
+                "name": a.title,
+                "is_dir": False,
+                "path": f"/a/{a.id}",
+                "size": a.size_bytes,
+                "id": a.id,
+                "url": a.url,
+                "title": a.title,
+                "children": []
+            }
+            proj_node["children"].append(file_node)
+        tree_root["children"].append(proj_node)
+
     return {
         "artifacts": artifacts,
         "scope": scope,
@@ -87,6 +123,7 @@ def _dashboard_context(
         "settings": settings,
         "hub_owner": hub_owner,
         "is_hub_owner": bool(auth and auth.user == hub_owner),
+        "tree": tree_root,
     }
 
 
@@ -131,6 +168,7 @@ def preview_artifact(
     auth: AuthContext | None = Depends(get_optional_auth),
     settings: Settings = Depends(get_settings),
     db: Database = Depends(get_db),
+    storage: ArtifactStorage = Depends(get_storage),
 ) -> HTMLResponse:
     row = db.get(artifact_id)
     if not row:
@@ -146,6 +184,8 @@ def preview_artifact(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
 
     artifact = to_artifact(row, settings.public_url)
+    nested_tree = storage.get_nested_tree(artifact_id)
+    flat_tree = storage.list_tree(artifact_id)
     return templates.TemplateResponse(
         request,
         "artifact.html",
@@ -154,6 +194,8 @@ def preview_artifact(
             "auth": auth,
             "settings": settings,
             "can_manage": settings.trust_network or viewer == artifact.owner,
+            "tree": nested_tree,  # keep for now if needed
+            "flat_tree": flat_tree,
         },
     )
 
@@ -229,6 +271,61 @@ def download_artifact(
         media_type="text/html",
         filename=f"{safe_title or artifact_id}.html",
     )
+
+
+def _safe_tree_path(artifacts_dir: Path, artifact_id: str, file_path: str) -> Path:
+    """Resolve a path inside a report tree and ensure it cannot escape."""
+    root = (artifacts_dir / artifact_id).resolve()
+    candidate = (root / file_path).resolve()
+    if not str(candidate).startswith(str(root)):
+        raise ValueError("path traversal detected")
+    # Additional guard
+    try:
+        if not candidate.is_relative_to(root):
+            raise ValueError("path escapes tree root")
+    except AttributeError:
+        # Python < 3.9 fallback
+        if not str(candidate).startswith(str(root)):
+            raise ValueError("path escapes tree root")
+    return candidate
+
+
+@router.get("/a/{artifact_id}/{file_path:path}")
+def serve_artifact_asset(
+    artifact_id: str,
+    file_path: str,
+    auth: AuthContext | None = Depends(get_optional_auth),
+    settings: Settings = Depends(get_settings),
+    db: Database = Depends(get_db),
+    storage: ArtifactStorage = Depends(get_storage),
+) -> Response:
+    """Serve any file inside a report's tree (images, data, extra pages, etc.).
+
+    Auth/visibility checked the same as /raw. Placed after more specific
+    routes (/raw, /download, ...) so they continue to match first.
+    """
+    row = db.get(artifact_id)
+    if not row:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+
+    viewer = auth.user if auth else None
+    if not can_view(
+        visibility=row["visibility"],
+        owner=row["owner"],
+        viewer=viewer,
+        trust_network=settings.trust_network,
+    ):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+
+    try:
+        target = _safe_tree_path(settings.artifacts_dir, artifact_id, file_path)
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+
+    if not target.exists() or not target.is_file():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+
+    return FileResponse(target)
 
 
 @router.post("/a/{artifact_id}/visibility", response_class=HTMLResponse)
